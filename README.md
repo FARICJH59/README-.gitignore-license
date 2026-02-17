@@ -40,9 +40,11 @@ git init
 git add .
 git commit -m "Initial commit"
 git branch -M main
-git remote add origin git@github.com:YourOrg/AxiomCorePlatformRepo.git
+git remote add origin git@github.com:<your-org>/AxiomCorePlatformRepo.git
 git push -u origin main
 ```
+
+> **Note**: Option 1 uses HTTPS for cloning (works without SSH keys), while Option 2 uses SSH for pushing (requires SSH key setup). You can use either protocol for both operations based on your preference and authentication setup.
 
 ## License
 
