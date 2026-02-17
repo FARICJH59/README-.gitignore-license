@@ -25,8 +25,8 @@ This repository serves as the foundation for the AxiomCore platform, providing a
 Clone the repository:
 
 ```bash
-git clone https://github.com/FARICJH59/README-.gitignore-license.git
-cd README-.gitignore-license
+git clone https://github.com/<your-org>/AxiomCorePlatformRepo.git
+cd AxiomCorePlatformRepo
 ```
 
 ## License
