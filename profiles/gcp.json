@@ -1,0 +1,37 @@
+{
+  "provider": "gcp",
+  "version": "1.0.0",
+  "configuration": {
+    "projectId": "",
+    "region": "us-central1",
+    "credentials": {
+      "type": "service_account",
+      "keyFile": ""
+    }
+  },
+  "resources": {
+    "compute": {
+      "machineTypes": ["e2-micro", "e2-small", "e2-medium"],
+      "defaultMachineType": "e2-small"
+    },
+    "storage": {
+      "types": ["GCS", "Persistent Disk", "Filestore"],
+      "defaultType": "GCS"
+    },
+    "networking": {
+      "vpcEnabled": true,
+      "subnetMode": "auto"
+    }
+  },
+  "defaults": {
+    "labels": {
+      "platform": "axiomcore",
+      "managed-by": "udo"
+    }
+  },
+  "features": {
+    "autoScaling": true,
+    "monitoring": true,
+    "logging": true
+  }
+}

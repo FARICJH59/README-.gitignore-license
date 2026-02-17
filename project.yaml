@@ -1,0 +1,145 @@
+name: AxiomCorePlatformRepo
+version: 1.0.0
+description: A full stack platform repo for AxiomCore
+
+metadata:
+  platform: AxiomCore
+  type: platform
+  license: MIT
+  maintainers:
+    - AxiomCore Team
+
+configuration:
+  runtime:
+    engine: PowerShell
+    version: 7.0+
+    pythonVersion: 3.8+
+  
+  providers:
+    enabled:
+      - aws
+      - gcp
+      - azure
+      - nvidia
+      - local
+    default: local
+
+  orchestration:
+    engine: UDO
+    dagEnabled: true
+    maxConcurrentJobs: 10
+    retryPolicy:
+      maxAttempts: 3
+      backoff: exponential
+
+  api:
+    enabled: true
+    port: 8080
+    authentication: jwt
+    rateLimit:
+      enabled: true
+      requestsPerMinute: 100
+
+  telemetry:
+    enabled: true
+    eventBus: true
+    metricsCollectionInterval: 60s
+    loggingLevel: info
+
+  governance:
+    enabled: true
+    complianceMode: strict
+    auditLogging: true
+
+  ai:
+    enabled: true
+    supportedFrameworks:
+      - tensorflow
+      - pytorch
+      - onnx
+    defaultRuntime: cpu
+
+components:
+  - name: runtime
+    path: ./runtime
+    type: core
+    
+  - name: providers
+    path: ./providers
+    type: integration
+    
+  - name: orchestrator
+    path: ./orchestrator
+    type: core
+    
+  - name: api
+    path: ./api
+    type: service
+    
+  - name: ai
+    path: ./ai
+    type: service
+    
+  - name: governance
+    path: ./governance
+    type: service
+    
+  - name: telemetry
+    path: ./telemetry
+    type: service
+    
+  - name: registry
+    path: ./registry
+    type: core
+
+profiles:
+  development:
+    provider: local
+    debug: true
+    hotReload: true
+    
+  staging:
+    provider: aws
+    region: us-east-1
+    
+  production:
+    provider: aws
+    region: us-west-2
+    highAvailability: true
+    backupEnabled: true
+
+dependencies:
+  powershell:
+    - PSScriptAnalyzer
+    - Pester
+    
+  python:
+    - requests
+    - pyyaml
+    - click
+
+build:
+  steps:
+    - validate
+    - test
+    - package
+  
+  validation:
+    scripts: true
+    configuration: true
+    
+  testing:
+    unit: true
+    integration: true
+    coverage: 80%
+
+deployment:
+  strategy: rolling
+  healthCheck:
+    enabled: true
+    path: /health
+    interval: 30s
+  
+  rollback:
+    automatic: true
+    threshold: 5%
