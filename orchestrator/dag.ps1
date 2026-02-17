@@ -37,7 +37,7 @@ function Add-DAGNode {
         [hashtable]$NodeDefinition
     )
     
-    Write-Host "Adding node to DAG $DAGName : $NodeId"
+    Write-Host "Adding node to DAG $DAGName: $NodeId"
     # Placeholder implementation
 }
 
@@ -60,7 +60,7 @@ function Add-DAGEdge {
         [string]$ToNode
     )
     
-    Write-Host "Adding edge in DAG $DAGName : $FromNode -> $ToNode"
+    Write-Host "Adding edge in DAG $DAGName: $FromNode -> $ToNode"
     # Placeholder implementation
 }
 
