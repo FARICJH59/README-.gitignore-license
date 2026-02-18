@@ -1,0 +1,26 @@
+# Cloud Build Configuration for AxiomCore MVP
+# Automated build and deployment pipeline
+
+steps:
+  # Build backend API
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/axiomcore-api:$COMMIT_SHA', './api']
+  
+  # Build frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/axiomcore-frontend:$COMMIT_SHA', './frontend']
+  
+  # Push images to registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/axiomcore-api:$COMMIT_SHA']
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/axiomcore-frontend:$COMMIT_SHA']
+
+images:
+  - 'gcr.io/$PROJECT_ID/axiomcore-api:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/axiomcore-frontend:$COMMIT_SHA'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
