@@ -33,7 +33,7 @@ $RootDir = Split-Path -Parent $ScriptDir
 
 # Load provider configuration
 Write-Host "Loading provider configuration..." -ForegroundColor Green
-& "$ScriptDir/$Provider.ps1"
+. "$ScriptDir/$Provider.ps1"
 
 # Initialize state management
 Write-Host "Initializing state management..." -ForegroundColor Green
