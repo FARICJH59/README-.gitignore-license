@@ -35,7 +35,6 @@ $global:DashboardState = @{
     Running = $true
     Paused = $false
     Agents = @()
-    ActiveJobs = @{}
     CompletedAgents = @()
     FailedAgents = @()
     LogBuffer = New-Object System.Collections.Generic.List[string]
@@ -315,7 +314,7 @@ function Show-VisualDashboard {
         # Progress bar
         if ($agent.Progress -gt 0) {
             $barWidth = 30
-            $filled = [Math]::Floor($agent.Progress / 100 * $barWidth)
+            $filled = [int]([Math]::Floor($agent.Progress * $barWidth / 100))
             $empty = $barWidth - $filled
             
             Write-Host " [" -NoNewline -ForegroundColor Gray
@@ -460,11 +459,11 @@ function Start-Dashboard {
         $agentQueue.Enqueue($agent)
     }
     
-    $activeJobs = @()
+    $runningAgents = @()
     $refreshCounter = 0
     
-    # Main loop
-    while ($agentQueue.Count -gt 0 -or $activeJobs.Count -gt 0) {
+    # Main loop - process agents with controlled concurrency
+    while ($agentQueue.Count -gt 0 -or $runningAgents.Count -gt 0) {
         
         # Check for pause
         if ($global:DashboardState.Paused) {
@@ -488,13 +487,148 @@ function Start-Dashboard {
         }
         
         # Start new agents if slots available
-        while ($activeJobs.Count -lt $MaxConcurrentAgents -and $agentQueue.Count -gt 0) {
+        while ($runningAgents.Count -lt $MaxConcurrentAgents -and $agentQueue.Count -gt 0) {
             $agent = $agentQueue.Dequeue()
             
             Write-Log "Starting agent for $($agent.Name)" -Level Info
             
-            # Execute agent task synchronously (not in job for better error handling)
-            $completed = Run-AgentTask -Agent $agent
+            # Start agent as background job for true concurrency
+            $job = Start-Job -ScriptBlock {
+                param($AgentName, $ProjectData, $ProjectsDir, $LogFile)
+                
+                $agent = @{
+                    Name = $AgentName
+                    Project = $ProjectData
+                    Status = 'Running'
+                    Progress = 0
+                    CurrentStep = ''
+                    StartTime = Get-Date
+                    EndTime = $null
+                    Error = $null
+                    RetryCount = 0
+                }
+                
+                $proj = $ProjectData
+                
+                try {
+                    # Step 1: Clone/Update Repository
+                    $agent.CurrentStep = 'Cloning repository'
+                    $agent.Progress = 10
+                    
+                    $localPath = Join-Path $ProjectsDir $proj.name
+                    if (-not (Test-Path $localPath)) {
+                        $gitOutput = git clone $proj.repo $localPath 2>&1
+                        if ($LASTEXITCODE -ne 0) {
+                            throw "Git clone failed: $gitOutput"
+                        }
+                    } else {
+                        Push-Location $localPath
+                        $gitOutput = git pull 2>&1
+                        Pop-Location
+                    }
+                    $agent.Progress = 25
+                    
+                    # Step 2: Scaffold Frontend
+                    $agent.CurrentStep = 'Scaffolding frontend'
+                    $agent.Progress = 30
+                    
+                    $frontendPath = Join-Path $localPath $proj.frontend.path
+                    if (-not (Test-Path $frontendPath)) {
+                        New-Item -ItemType Directory -Path $frontendPath -Force | Out-Null
+                        Push-Location $frontendPath
+                        
+                        npm init -y 2>&1 | Out-Null
+                        npm install react react-dom next 2>&1 | Out-Null
+                        
+                        New-Item -ItemType Directory -Path "src/app" -Force | Out-Null
+                        Pop-Location
+                    }
+                    $agent.Progress = 45
+                    
+                    # Step 3: Scaffold Backend
+                    $agent.CurrentStep = 'Scaffolding backend'
+                    $agent.Progress = 50
+                    
+                    $apiPath = Join-Path $localPath $proj.backend.path
+                    if (-not (Test-Path $apiPath)) {
+                        New-Item -ItemType Directory -Path $apiPath -Force | Out-Null
+                        Push-Location $apiPath
+                        
+                        npm init -y 2>&1 | Out-Null
+                        npm install express 2>&1 | Out-Null
+                        Pop-Location
+                    }
+                    $agent.Progress = 65
+                    
+                    # Step 4: Dockerize Services
+                    $agent.CurrentStep = 'Building Docker images'
+                    $agent.Progress = 70
+                    
+                    $services = @{
+                        'frontend' = @{
+                            Path = $frontendPath
+                            Port = $proj.frontend.port
+                            Command = 'dev'
+                        }
+                        'api' = @{
+                            Path = $apiPath
+                            Port = $proj.backend.port
+                            Command = 'start'
+                        }
+                    }
+                    
+                    foreach ($serviceName in $services.Keys) {
+                        $service = $services[$serviceName]
+                        $dockerfilePath = Join-Path $service.Path "Dockerfile"
+                        
+                        if (-not (Test-Path $dockerfilePath)) {
+                            $dockerContent = @"
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE $($service.Port)
+CMD ["npm", "run", "$($service.Command)"]
+"@
+                            $dockerContent | Set-Content $dockerfilePath
+                        }
+                        
+                        docker build -t "$($proj.name)-$serviceName" $service.Path 2>&1 | Out-Null
+                        docker rm -f "$($proj.name)-$serviceName" 2>&1 | Out-Null
+                        docker run -d -p "$($service.Port):$($service.Port)" --name "$($proj.name)-$serviceName" "$($proj.name)-$serviceName" 2>&1 | Out-Null
+                    }
+                    
+                    $agent.Progress = 90
+                    
+                    # Step 5: Open Frontend in Browser
+                    $agent.CurrentStep = 'Launching browser'
+                    $agent.Progress = 95
+                    
+                    if ($proj.frontend.port) {
+                        Start-Sleep -Seconds 2
+                        Start-Process "http://localhost:$($proj.frontend.port)"
+                    }
+                    
+                    $agent.Status = 'Completed'
+                    $agent.Progress = 100
+                    $agent.EndTime = Get-Date
+                    
+                } catch {
+                    $agent.Status = 'Failed'
+                    $agent.Error = $_.Exception.Message
+                    $agent.EndTime = Get-Date
+                }
+                
+                return $agent
+                
+            } -ArgumentList $agent.Name, $agent.Project, $projectsDir, $logFile
+            
+            $runningAgents += @{
+                Job = $job
+                Agent = $agent
+                StartTime = Get-Date
+            }
         }
         
         # Update display
@@ -503,17 +637,46 @@ function Start-Dashboard {
         }
         $refreshCounter++
         
-        # Check if agents need retry
-        $agentsToRetry = $global:DashboardState.Agents | Where-Object { 
-            $_.Status -eq 'Failed' -and $AutoRetry -and $_.RetryCount -lt 3 
+        # Check for completed jobs
+        $completedJobs = @()
+        foreach ($jobInfo in $runningAgents) {
+            if ($jobInfo.Job.State -eq 'Completed' -or $jobInfo.Job.State -eq 'Failed') {
+                $completedJobs += $jobInfo
+            }
         }
         
-        foreach ($agent in $agentsToRetry) {
-            $agent.Status = 'Queued'
-            $agent.Progress = 0
-            $agent.Error = $null
-            $agentQueue.Enqueue($agent)
-            Write-Log "Retrying agent $($agent.Name) (attempt #$($agent.RetryCount + 1))" -Level Warning
+        # Process completed jobs
+        foreach ($jobInfo in $completedJobs) {
+            try {
+                $result = Receive-Job -Job $jobInfo.Job
+                
+                # Update agent with results from job
+                $jobInfo.Agent.Status = $result.Status
+                $jobInfo.Agent.Progress = $result.Progress
+                $jobInfo.Agent.EndTime = $result.EndTime
+                $jobInfo.Agent.Error = $result.Error
+                
+                if ($result.Status -eq 'Completed') {
+                    Write-Log "$($jobInfo.Agent.Name) completed successfully" -Level Success -AgentName $jobInfo.Agent.Name
+                } else {
+                    Write-Log "$($jobInfo.Agent.Name) failed: $($result.Error)" -Level Error -AgentName $jobInfo.Agent.Name
+                }
+            } catch {
+                Write-Log "Error receiving job results for $($jobInfo.Agent.Name): $_" -Level Error
+            }
+            
+            Remove-Job $jobInfo.Job -Force
+            $runningAgents = $runningAgents | Where-Object { $_.Job.Id -ne $jobInfo.Job.Id }
+            
+            # Check if retry needed
+            if ($jobInfo.Agent.Status -eq 'Failed' -and $AutoRetry -and $jobInfo.Agent.RetryCount -lt 3) {
+                $jobInfo.Agent.RetryCount++
+                $jobInfo.Agent.Status = 'Queued'
+                $jobInfo.Agent.Progress = 0
+                $jobInfo.Agent.Error = $null
+                $agentQueue.Enqueue($jobInfo.Agent)
+                Write-Log "Retrying $($jobInfo.Agent.Name) (attempt #$($jobInfo.Agent.RetryCount))" -Level Warning -AgentName $jobInfo.Agent.Name
+            }
         }
         
         # Check for keyboard input
