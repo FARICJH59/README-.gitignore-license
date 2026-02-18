@@ -37,15 +37,18 @@ Write-Host "Loading provider configuration..." -ForegroundColor Green
 
 # Initialize state management
 Write-Host "Initializing state management..." -ForegroundColor Green
-& "$ScriptDir/state.ps1" -Init
+. "$ScriptDir/state.ps1"
+Initialize-RuntimeState
 
 # Run UDO orchestration
 Write-Host "Running UDO orchestration..." -ForegroundColor Green
-& "$ScriptDir/udo.ps1" -Environment $Environment
+. "$ScriptDir/udo.ps1"
+Initialize-UDO
 
 # Execute DAG for deployment
 Write-Host "Executing deployment DAG..." -ForegroundColor Green
-& "$ScriptDir/dag.ps1" -Action Deploy -Environment $Environment
+. "$ScriptDir/dag.ps1"
+Initialize-DAG -DAGName "axiomcore-deployment-$Environment"
 
 if (-not $SkipTests) {
     Write-Host "Running post-deployment tests..." -ForegroundColor Green
