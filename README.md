@@ -53,3 +53,40 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Reviewing Pull Requests
+
+To review and test a pull request locally:
+
+1. Navigate to your local repository:
+
+```bash
+cd /path/to/AxiomCorePlatformRepo
+```
+
+2. Fetch the PR branch (replace `<PR_NUMBER>` with the actual PR number):
+
+```bash
+git fetch origin pull/<PR_NUMBER>/head:pr-<PR_NUMBER>
+```
+
+3. Check out the PR branch:
+
+```bash
+git checkout pr-<PR_NUMBER>
+```
+
+4. Test the changes as needed, then return to your main branch:
+
+```bash
+git checkout main
+```
+
+**Example**: To review PR #42:
+
+```bash
+git fetch origin pull/42/head:pr-42
+git checkout pr-42
+# Test the changes...
+git checkout main
+```
