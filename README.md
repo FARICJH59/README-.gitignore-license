@@ -1,10 +1,10 @@
-# AxiomCorePlatformRepo
+# axiomcore
 
-A full stack platform repo for AxiomCore
+AxiomCore MVP — backend, frontend, AI orchestration
 
 ## Description
 
-This repository serves as the foundation for the AxiomCore platform, providing a comprehensive full-stack solution. The project supports both PowerShell and Python development environments.
+This repository serves as the foundation for the AxiomCore MVP platform, providing backend services, frontend interfaces, and AI orchestration capabilities. The project is a comprehensive full-stack solution supporting both PowerShell and Python development environments.
 
 ## Features
 
@@ -22,29 +22,48 @@ This repository serves as the foundation for the AxiomCore platform, providing a
 
 ### Installation
 
-#### Option 1: Clone an Existing Repository
+#### Option 1: Clone the Repository
 
 Clone the repository:
 
 ```bash
-git clone https://github.com/<your-org>/AxiomCorePlatformRepo.git
-cd AxiomCorePlatformRepo
+git clone https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git
+cd axiomcore
 ```
 
-#### Option 2: Initialize a New Repository
+#### Option 2: Create a New Repository
 
-If you're starting a new AxiomCore project from scratch:
+If you need to create a new axiomcore repository, you can use the provided scripts:
+
+**Using Bash (Linux/macOS):**
+```bash
+./create-repo.sh
+```
+
+**Using PowerShell (Windows/Cross-platform):**
+```powershell
+./create-repo.ps1
+```
+
+**Or manually with GitHub CLI:**
+```bash
+gh repo create TechFusion-Quantum-Global-Platform/axiomcore \
+  --private \
+  --description "AxiomCore MVP — backend, frontend, AI orchestration" \
+  --confirm
+```
+
+Then clone and set up:
 
 ```bash
-git init
+git clone https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git
+cd axiomcore
 git add .
 git commit -m "Initial commit"
-git branch -M main
-git remote add origin git@github.com:<your-org>/AxiomCorePlatformRepo.git
 git push -u origin main
 ```
 
-> **Note**: Option 1 uses HTTPS for cloning (works without SSH keys), while Option 2 uses SSH for pushing (requires SSH key setup). You can use either protocol for both operations based on your preference and authentication setup.
+> **Note**: Option 2 requires GitHub CLI (`gh`) to be installed and authenticated. The repository will be created as private under the TechFusion-Quantum-Global-Platform organization.
 
 ## License
 

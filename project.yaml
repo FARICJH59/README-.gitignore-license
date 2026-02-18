@@ -1,11 +1,14 @@
-name: AxiomCorePlatformRepo
+name: axiomcore
 version: 1.0.0
-description: A full stack platform repo for AxiomCore
+description: AxiomCore MVP — backend, frontend, AI orchestration
 
 metadata:
   platform: AxiomCore
-  type: platform
+  type: mvp
   license: MIT
+  organization: TechFusion-Quantum-Global-Platform
+  repository: https://github.com/TechFusion-Quantum-Global-Platform/axiomcore
+  visibility: private
   maintainers:
     - AxiomCore Team
 
