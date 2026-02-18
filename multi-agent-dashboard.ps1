@@ -8,7 +8,8 @@ param(
     [string]$BrainFile = "$env:USERPROFILE\Projects\brain-knowledge.json"
 )
 
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+# Note: Ensure execution policy allows script execution
+# Run this if needed: Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
 
 # ------------------------------
 # Configuration
@@ -115,11 +116,18 @@ function Run-AgentTask {
         $localPath = Join-Path $projectsDir $proj.name
         if (-not (Test-Path $localPath)) {
             Write-Log "Cloning repository from $($proj.repo)" -Level Info -AgentName $proj.name
-            git clone $proj.repo $localPath 2>&1 | Out-Null
+            $gitOutput = git clone $proj.repo $localPath 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Log "Git clone failed: $gitOutput" -Level Error -AgentName $proj.name
+                throw "Git clone failed"
+            }
         } else {
             Write-Log "Updating existing repository" -Level Info -AgentName $proj.name
             Push-Location $localPath
-            git pull 2>&1 | Out-Null
+            $gitOutput = git pull 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Log "Git pull failed: $gitOutput" -Level Warning -AgentName $proj.name
+            }
             Pop-Location
         }
         $Agent.Progress = 25
@@ -135,8 +143,16 @@ function Run-AgentTask {
             Push-Location $frontendPath
             
             # Initialize npm project
-            npm init -y 2>&1 | Out-Null
-            npm install react react-dom next 2>&1 | Out-Null
+            $npmOutput = npm init -y 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Log "npm init failed: $npmOutput" -Level Warning -AgentName $proj.name
+            }
+            Write-Log "Installing React dependencies..." -Level Info -AgentName $proj.name
+            $npmOutput = npm install react react-dom next 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Log "npm install failed: $npmOutput" -Level Error -AgentName $proj.name
+                throw "npm install failed"
+            }
             
             # Create basic structure
             New-Item -ItemType Directory -Path "src/app" -Force | Out-Null
@@ -154,8 +170,16 @@ function Run-AgentTask {
             New-Item -ItemType Directory -Path $apiPath -Force | Out-Null
             Push-Location $apiPath
             
-            npm init -y 2>&1 | Out-Null
-            npm install express 2>&1 | Out-Null
+            $npmOutput = npm init -y 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Log "npm init failed: $npmOutput" -Level Warning -AgentName $proj.name
+            }
+            Write-Log "Installing Express..." -Level Info -AgentName $proj.name
+            $npmOutput = npm install express 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Log "npm install failed: $npmOutput" -Level Error -AgentName $proj.name
+                throw "npm install failed"
+            }
             Pop-Location
         }
         $Agent.Progress = 65
@@ -198,12 +222,20 @@ CMD ["npm", "run", "$($service.Command)"]
             
             # Build Docker image
             Write-Log "Building Docker image for $serviceName" -Level Info -AgentName $proj.name
-            docker build -t "$($proj.name)-$serviceName" $service.Path 2>&1 | Out-Null
+            $dockerOutput = docker build -t "$($proj.name)-$serviceName" $service.Path 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Log "Docker build failed: $dockerOutput" -Level Error -AgentName $proj.name
+                throw "Docker build failed"
+            }
             
             # Run Docker container
             Write-Log "Starting Docker container for $serviceName" -Level Info -AgentName $proj.name
             docker rm -f "$($proj.name)-$serviceName" 2>&1 | Out-Null
-            docker run -d -p "$($service.Port):$($service.Port)" --name "$($proj.name)-$serviceName" "$($proj.name)-$serviceName" 2>&1 | Out-Null
+            $dockerOutput = docker run -d -p "$($service.Port):$($service.Port)" --name "$($proj.name)-$serviceName" "$($proj.name)-$serviceName" 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Log "Docker run failed: $dockerOutput" -Level Error -AgentName $proj.name
+                throw "Docker run failed"
+            }
         }
         
         $Agent.Progress = 90
@@ -250,7 +282,9 @@ function Show-VisualDashboard {
     
     # Header
     Write-Host ("=" * $width) -ForegroundColor Cyan
-    Write-Host " Multi-Agent Monitoring Dashboard - AxiomCore ".PadLeft($width/2 + 25).PadRight($width) -ForegroundColor Cyan -BackgroundColor DarkBlue
+    $headerText = " Multi-Agent Monitoring Dashboard - AxiomCore "
+    $padding = [int](($width - $headerText.Length) / 2)
+    Write-Host ($headerText.PadLeft($padding + $headerText.Length).PadRight($width)) -ForegroundColor Cyan -BackgroundColor DarkBlue
     Write-Host ("=" * $width) -ForegroundColor Cyan
     Write-Host ""
     
@@ -459,26 +493,8 @@ function Start-Dashboard {
             
             Write-Log "Starting agent for $($agent.Name)" -Level Info
             
-            $job = Start-Job -ScriptBlock {
-                param($AgentData)
-                
-                # Import the Run-AgentTask function in job context
-                $result = @{
-                    Success = $true
-                    Agent = $AgentData
-                }
-                
-                return $result
-                
-            } -ArgumentList $agent
-            
-            $activeJobs += @{
-                Job = $job
-                Agent = $agent
-            }
-            
-            # Run agent task in current context
-            Start-Job -ScriptBlock ${function:Run-AgentTask} -ArgumentList $agent | Out-Null
+            # Execute agent task synchronously (not in job for better error handling)
+            $completed = Run-AgentTask -Agent $agent
         }
         
         # Update display
@@ -487,25 +503,17 @@ function Start-Dashboard {
         }
         $refreshCounter++
         
-        # Check for completed jobs
-        $completedJobs = @()
-        foreach ($jobInfo in $activeJobs) {
-            if ($jobInfo.Job.State -eq 'Completed' -or $jobInfo.Job.State -eq 'Failed') {
-                $completedJobs += $jobInfo
-            }
+        # Check if agents need retry
+        $agentsToRetry = $global:DashboardState.Agents | Where-Object { 
+            $_.Status -eq 'Failed' -and $AutoRetry -and $_.RetryCount -lt 3 
         }
         
-        # Remove completed jobs
-        foreach ($jobInfo in $completedJobs) {
-            $activeJobs = $activeJobs | Where-Object { $_.Job.Id -ne $jobInfo.Job.Id }
-            Remove-Job $jobInfo.Job -Force
-            
-            # Check if retry needed
-            if ($jobInfo.Agent.Status -eq 'Failed' -and $AutoRetry -and $jobInfo.Agent.RetryCount -lt 3) {
-                $jobInfo.Agent.Status = 'Queued'
-                $jobInfo.Agent.Progress = 0
-                $agentQueue.Enqueue($jobInfo.Agent)
-            }
+        foreach ($agent in $agentsToRetry) {
+            $agent.Status = 'Queued'
+            $agent.Progress = 0
+            $agent.Error = $null
+            $agentQueue.Enqueue($agent)
+            Write-Log "Retrying agent $($agent.Name) (attempt #$($agent.RetryCount + 1))" -Level Warning
         }
         
         # Check for keyboard input

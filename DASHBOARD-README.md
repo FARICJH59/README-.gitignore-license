@@ -20,7 +20,10 @@ A comprehensive PowerShell-based monitoring and orchestration system for managin
 
 ## Prerequisites
 
-- PowerShell 5.1 or later (PowerShell Core 7+ recommended)
+- **PowerShell Console** (PowerShell 5.1 or later, PowerShell Core 7+ recommended)
+  - **Note**: Interactive controls ([P], [R], [Q]) require PowerShell Console Host
+  - PowerShell ISE and some other hosts don't support `[Console]::KeyAvailable`
+  - For non-interactive use, disable visual mode: `-VisualMode:$false`
 - Git
 - Docker Desktop (for containerization)
 - Node.js and npm (for frontend/backend scaffolding)
