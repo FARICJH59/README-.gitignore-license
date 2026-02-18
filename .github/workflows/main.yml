@@ -1,0 +1,51 @@
+name: Deploy AxiomCore Full-Stack
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # allows manual triggering
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    env:
+      NODE_ENV: production
+
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Set up PowerShell environment
+      - name: Set up PowerShell
+        uses: actions/setup-powershell@v2
+        with:
+          pwsh-version: '7.4'
+
+      # 3️⃣ Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.x'
+
+      # 4️⃣ Install Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # 5️⃣ Install Docker
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      # 6️⃣ Run the full-stack deployment script
+      - name: Run deploy-axiomcore-fullstack.ps1
+        shell: pwsh
+        run: |
+          Set-StrictMode -Version Latest
+          .\deploy-axiomcore-fullstack.ps1
+
+      # 7️⃣ Optional: Post-deploy status
+      - name: Deployment completed
+        run: Write-Host "✅ Full-stack deployment completed successfully!"
