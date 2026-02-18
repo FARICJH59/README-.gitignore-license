@@ -53,11 +53,12 @@ gh repo create TechFusion-Quantum-Global-Platform/axiomcore \
   --confirm
 ```
 
-Then clone and set up:
+Then clone and initialize:
 
 ```bash
 git clone https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git
 cd axiomcore
+# Add your project files here
 git add .
 git commit -m "Initial commit"
 git push -u origin main
