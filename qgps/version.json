@@ -1,0 +1,52 @@
+{
+  "qgps": {
+    "version": "1.0.0",
+    "name": "QGPS - Quality, Governance, Performance, Security",
+    "description": "QGPS framework for platform management"
+  },
+  "quality": {
+    "metrics": {
+      "codeQuality": "enabled",
+      "testCoverage": "enabled",
+      "documentationScore": "enabled"
+    },
+    "thresholds": {
+      "minTestCoverage": 80,
+      "minCodeQuality": 7.5
+    }
+  },
+  "governance": {
+    "policies": {
+      "complianceChecks": "enabled",
+      "auditLogging": "enabled",
+      "accessControl": "rbac"
+    },
+    "standards": [
+      "ISO27001",
+      "SOC2",
+      "GDPR"
+    ]
+  },
+  "performance": {
+    "monitoring": {
+      "enabled": true,
+      "interval": "1m",
+      "retention": "30d"
+    },
+    "sla": {
+      "availability": 99.9,
+      "latencyP99": 500
+    }
+  },
+  "security": {
+    "scanning": {
+      "vulnerabilities": "enabled",
+      "secrets": "enabled",
+      "dependencies": "enabled"
+    },
+    "encryption": {
+      "atRest": true,
+      "inTransit": true
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "provider": "azure",
+  "version": "1.0.0",
+  "configuration": {
+    "subscriptionId": "",
+    "resourceGroup": "",
+    "location": "eastus",
+    "credentials": {
+      "type": "service_principal",
+      "clientId": "",
+      "clientSecret": "",
+      "tenantId": ""
+    }
+  },
+  "resources": {
+    "compute": {
+      "vmSizes": ["Standard_B1s", "Standard_B2s", "Standard_D2s_v3"],
+      "defaultVmSize": "Standard_B2s"
+    },
+    "storage": {
+      "types": ["Blob Storage", "Disk", "Files"],
+      "defaultType": "Blob Storage"
+    },
+    "networking": {
+      "vnetEnabled": true,
+      "subnetCount": 2
+    }
+  },
+  "defaults": {
+    "tags": {
+      "Platform": "AxiomCore",
+      "ManagedBy": "UDO"
+    }
+  },
+  "features": {
+    "autoScaling": true,
+    "monitoring": true,
+    "logging": true
+  }
+}

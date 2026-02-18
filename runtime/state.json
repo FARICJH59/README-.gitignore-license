@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "initialized": false,
+  "lastUpdated": null,
+  "environment": "development",
+  "components": {
+    "runtime": {
+      "status": "inactive",
+      "startTime": null
+    },
+    "providers": {
+      "loaded": []
+    },
+    "orchestrator": {
+      "status": "inactive"
+    }
+  },
+  "metadata": {
+    "platform": "AxiomCore",
+    "description": "Runtime state management"
+  }
+}

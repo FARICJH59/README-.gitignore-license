@@ -1,0 +1,37 @@
+{
+  "provider": "aws",
+  "version": "1.0.0",
+  "configuration": {
+    "region": "us-east-1",
+    "credentials": {
+      "type": "iam",
+      "accessKeyId": "",
+      "secretAccessKey": ""
+    }
+  },
+  "resources": {
+    "compute": {
+      "instanceTypes": ["t3.micro", "t3.small", "t3.medium"],
+      "defaultInstanceType": "t3.small"
+    },
+    "storage": {
+      "types": ["S3", "EBS", "EFS"],
+      "defaultType": "S3"
+    },
+    "networking": {
+      "vpcEnabled": true,
+      "subnetCount": 2
+    }
+  },
+  "defaults": {
+    "tags": {
+      "Platform": "AxiomCore",
+      "ManagedBy": "UDO"
+    }
+  },
+  "features": {
+    "autoScaling": true,
+    "monitoring": true,
+    "logging": true
+  }
+}
