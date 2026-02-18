@@ -150,3 +150,29 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Node.js / Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Frontend build output
+frontend/build/
+frontend/dist/
+
+# Terraform
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/*.tfvars
+infra/terraform/.terraform.lock.hcl
+
+# Deployment artifacts
+last-deployment.json
+*.log
