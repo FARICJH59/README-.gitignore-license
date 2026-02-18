@@ -1,0 +1,38 @@
+[
+  {
+    "name": "axiomcore",
+    "repo": "https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git",
+    "frontend": {
+      "path": "frontend",
+      "port": 3000
+    },
+    "backend": {
+      "path": "api",
+      "port": 8080
+    }
+  },
+  {
+    "name": "energy-dashboard",
+    "repo": "https://github.com/example/energy-dashboard.git",
+    "frontend": {
+      "path": "client",
+      "port": 3001
+    },
+    "backend": {
+      "path": "server",
+      "port": 8081
+    }
+  },
+  {
+    "name": "ai-predictor",
+    "repo": "https://github.com/example/ai-predictor.git",
+    "frontend": {
+      "path": "web",
+      "port": 3002
+    },
+    "backend": {
+      "path": "api",
+      "port": 8082
+    }
+  }
+]
