@@ -39,6 +39,13 @@ jobs:
           $RootPath = "${{ github.workspace }}"
           & "$RootPath\scripts\axiom-orchestrator.ps1" -Action status
       
+      - name: Run QGPS Cockpit
+        if: success()
+        shell: pwsh
+        run: |
+          $RootPath = "${{ github.workspace }}"
+          & "$RootPath\scripts\qgps-cockpit.ps1" -MaxConcurrency 2
+      
       - name: Upload Compliance Logs
         uses: actions/upload-artifact@v4
         if: always()

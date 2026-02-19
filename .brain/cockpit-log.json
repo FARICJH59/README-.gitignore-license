@@ -1,17 +1,65 @@
 {
-  "lastRun": "2026-02-19T14:26:42.0934805+00:00",
-  "platform": {
-    "edition": "Core",
-    "isWindows": false,
-    "version": "7.4.13",
-    "os": "Ubuntu 24.04.3 LTS"
-  },
-  "processedRepos": [],
-  "environment": {
-    "npmVersion": "11.6.2",
-    "nodeVersion": "v24.13.0"
-  },
-  "runningJobs": 0,
-  "maxConcurrency": 2,
-  "launchedServers": []
+  "entries": [
+    null,
+    {
+      "action": "setup-start",
+      "timestamp": "2026-02-19T16:23:16.0174719+00:00",
+      "message": "Starting enterprise protection setup",
+      "status": "running"
+    },
+    {
+      "action": "validate-prerequisites",
+      "timestamp": "2026-02-19T16:23:16.3462338+00:00",
+      "details": {
+        "gitAvailable": true,
+        "ghAvailable": true,
+        "hasToken": true
+      },
+      "message": "",
+      "status": "completed"
+    },
+    {
+      "action": "verify-structure",
+      "timestamp": "2026-02-19T16:23:16.3568402+00:00",
+      "details": {
+        "missingFolders": []
+      },
+      "message": "",
+      "status": "completed"
+    },
+    {
+      "action": "verify-scripts",
+      "timestamp": "2026-02-19T16:23:16.3679141+00:00",
+      "message": "",
+      "status": "completed"
+    },
+    {
+      "action": "verify-workflow",
+      "timestamp": "2026-02-19T16:23:16.3801679+00:00",
+      "message": "",
+      "status": "completed"
+    },
+    {
+      "action": "configure-branch-protection",
+      "timestamp": "2026-02-19T16:23:16.3865324+00:00",
+      "message": "Manual configuration required via GitHub UI",
+      "status": "info"
+    },
+    {
+      "action": "setup-complete",
+      "timestamp": "2026-02-19T16:23:16.3904126+00:00",
+      "details": {
+        "branchProtectionConfigured": true,
+        "scriptsVerified": true,
+        "repository": "FARICJH59/axiomcore",
+        "timestamp": "2026-02-19T16:23:16.3893832+00:00",
+        "branch": "main",
+        "workflowExists": true
+      },
+      "message": "",
+      "status": "completed"
+    }
+  ],
+  "lastRun": "2026-02-19T16:23:16.3913585+00:00",
+  "setupVersion": "1.0.0"
 }
