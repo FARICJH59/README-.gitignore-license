@@ -210,6 +210,11 @@ $env:GITHUB_TOKEN = "your_token_here"
 - Ensure you have admin access to the repository
 - Verify your GitHub token has the required scopes: `repo`, `workflow`
 
+### Additional Documentation
+
+For detailed setup instructions, troubleshooting, and advanced usage, see:
+- [Enterprise Protection Setup Guide](docs/ENTERPRISE-PROTECTION-SETUP.md) - Comprehensive guide for configuring enterprise-level branch protection
+
 ## QGPS Autonomous Cockpit
 
 The QGPS Autonomous Cockpit provides automated orchestration for multiple repositories with dependency management and dev server launch capabilities.
