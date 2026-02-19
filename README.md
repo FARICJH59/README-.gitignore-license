@@ -69,6 +69,34 @@ git push -u origin main
 
 > **Note**: Option 2 requires GitHub CLI (`gh`) to be installed and authenticated. The repository will be created as private under the TechFusion-Quantum-Global-Platform organization.
 
+## QGPS Autonomous Cockpit
+
+The QGPS Autonomous Cockpit provides automated orchestration for multiple repositories with dependency management and dev server launch capabilities.
+
+### Usage
+
+```powershell
+# Start all registered repositories
+.\scripts\qgps-cockpit.ps1
+
+# Specify max concurrency (default: 2)
+.\scripts\qgps-cockpit.ps1 -MaxConcurrency 3
+```
+
+### Features
+
+- **Automatic Dependency Installation**: Runs `npm install` for all registered repositories with package.json
+- **Smart Building**: Executes build scripts if they exist in package.json
+- **Dev Server Launch**: Automatically starts dev servers in separate PowerShell windows
+- **Logging**: All cockpit runs are logged to `.brain/cockpit-log.json`
+
+### Prerequisites
+
+Before using the cockpit, ensure:
+1. Repositories are registered using `.\scripts\generate-autopilot-repo.ps1`
+2. Node.js and npm are installed for JavaScript/TypeScript projects
+3. Brain core is initialized with `brain-core/repo-registry.json`
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
