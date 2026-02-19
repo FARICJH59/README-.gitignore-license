@@ -17,35 +17,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Set up PowerShell environment
-      - name: Set up PowerShell
-        uses: actions/setup-powershell@v2
-        with:
-          pwsh-version: '7.4'
-
-      # 3️⃣ Install Node.js
+      # 2️⃣ Install Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '22.x'
 
-      # 4️⃣ Install Python
+      # 3️⃣ Install Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      # 5️⃣ Install Docker
+      # 4️⃣ Install Docker
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
 
-      # 6️⃣ Run the full-stack deployment script
+      # 5️⃣ Run the full-stack deployment script
       - name: Run deploy-axiomcore-fullstack.ps1
         shell: pwsh
         run: |
           Set-StrictMode -Version Latest
           .\scripts\deploy-axiomcore-fullstack.ps1
 
-      # 7️⃣ Optional: Post-deploy status
+      # 6️⃣ Optional: Post-deploy status
       - name: Deployment completed
         run: Write-Host "✅ Full-stack deployment completed successfully!"
