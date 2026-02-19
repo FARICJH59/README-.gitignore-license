@@ -66,6 +66,36 @@ function Write-CockpitLog {
     }
 }
 
+# Helper function to clean up completed jobs/processes
+function Update-RunningJobs {
+    param(
+        [array]$JobList,
+        [bool]$IsWindowsPlatform
+    )
+    
+    $activeJobs = @()
+    
+    foreach ($item in $JobList) {
+        $isStillRunning = $false
+        
+        if ($item.Type -eq "Job") {
+            # Check PowerShell job
+            $job = Get-Job -Id $item.Id -ErrorAction SilentlyContinue
+            $isStillRunning = ($job -and $job.State -eq "Running")
+        } elseif ($item.Type -eq "Process") {
+            # Check Windows process
+            $process = Get-Process -Id $item.Id -ErrorAction SilentlyContinue
+            $isStillRunning = ($process -ne $null)
+        }
+        
+        if ($isStillRunning) {
+            $activeJobs += $item
+        }
+    }
+    
+    return $activeJobs
+}
+
 # Helper function to check environment versions
 function Test-EnvironmentVersions {
     $results = @{
@@ -79,7 +109,7 @@ function Test-EnvironmentVersions {
     # Check Node.js version
     try {
         $nodeVersionOutput = node -v 2>&1
-        if ($LASTEXITCODE -eq 0) {
+        if ($?) {
             $results.nodeVersion = $nodeVersionOutput.ToString().Trim()
             # Extract version number (e.g., v18.17.0 -> 18.17.0)
             if ($results.nodeVersion -match 'v?(\d+)\.') {
@@ -98,7 +128,7 @@ function Test-EnvironmentVersions {
     # Check npm version
     try {
         $npmVersionOutput = npm -v 2>&1
-        if ($LASTEXITCODE -eq 0) {
+        if ($?) {
             $results.npmVersion = $npmVersionOutput.ToString().Trim()
             $results.npmVersionOk = $true
         }
@@ -280,14 +310,13 @@ foreach ($repo in $registry.repositories.PSObject.Properties) {
         Write-Host "   🔧 Installing dependencies..." -ForegroundColor Yellow
         Push-Location $repoPath
         try {
-            $installOutput = npm install --silent 2>&1
-            $installExitCode = $LASTEXITCODE
+            $installOutput = npm install --silent 2>&1 | Out-String
             
-            if ($installExitCode -eq 0) {
+            if ($?) {
                 Write-Host "   ✅ Dependencies installed" -ForegroundColor Green
                 Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "npm-install" -Status "success" -Message "Dependencies installed successfully"
             } else {
-                $errorMsg = "npm install exited with code $installExitCode"
+                $errorMsg = "npm install failed"
                 if ($installOutput) {
                     $errorMsg += " - $installOutput"
                 }
@@ -314,14 +343,13 @@ foreach ($repo in $registry.repositories.PSObject.Properties) {
                 Write-Host "   🏗️  Building project..." -ForegroundColor Yellow
                 Push-Location $repoPath
                 try {
-                    $buildOutput = npm run build 2>&1
-                    $buildExitCode = $LASTEXITCODE
+                    $buildOutput = npm run build 2>&1 | Out-String
                     
-                    if ($buildExitCode -eq 0) {
+                    if ($?) {
                         Write-Host "   ✅ Build completed" -ForegroundColor Green
                         Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "npm-build" -Status "success" -Message "Build completed successfully"
                     } else {
-                        throw "npm run build exited with code $buildExitCode"
+                        throw "npm run build failed"
                     }
                 } catch {
                     Write-Host "   ❌ Error during build: $($_.Exception.Message)" -ForegroundColor Red
@@ -338,11 +366,8 @@ foreach ($repo in $registry.repositories.PSObject.Properties) {
                     Write-Host "   ⏳ Waiting for available slot (current: $($runningJobs.Count)/$MaxConcurrency)..." -ForegroundColor Yellow
                     Start-Sleep -Seconds 2
                     
-                    # Clean up completed jobs
-                    $runningJobs = $runningJobs | Where-Object { 
-                        $job = Get-Job -Id $_.Id -ErrorAction SilentlyContinue
-                        $job -and $job.State -eq "Running"
-                    }
+                    # Clean up completed jobs/processes
+                    $runningJobs = Update-RunningJobs -JobList $runningJobs -IsWindowsPlatform $isWindowsPlatform
                 }
                 
                 Write-Host "   🚀 Starting dev server..." -ForegroundColor Green
@@ -391,11 +416,8 @@ foreach ($repo in $registry.repositories.PSObject.Properties) {
                     Write-Host "   ⏳ Waiting for available slot (current: $($runningJobs.Count)/$MaxConcurrency)..." -ForegroundColor Yellow
                     Start-Sleep -Seconds 2
                     
-                    # Clean up completed jobs
-                    $runningJobs = $runningJobs | Where-Object { 
-                        $job = Get-Job -Id $_.Id -ErrorAction SilentlyContinue
-                        $job -and $job.State -eq "Running"
-                    }
+                    # Clean up completed jobs/processes
+                    $runningJobs = Update-RunningJobs -JobList $runningJobs -IsWindowsPlatform $isWindowsPlatform
                 }
                 
                 Write-Host "   🚀 Starting server..." -ForegroundColor Green
