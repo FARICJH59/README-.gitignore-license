@@ -19,7 +19,8 @@ function Write-CockpitLog {
         [string]$Action,
         [string]$Status,
         [string]$Message = "",
-        [object]$ErrorDetails = $null
+        [object]$ErrorDetails = $null,
+        [int]$MaxConcurrency = 0
     )
     
     try {
@@ -58,6 +59,9 @@ function Write-CockpitLog {
         # Add new log entry
         $existingLog.detailedLogs += $logEntry
         $existingLog.lastRun = Get-Date -Format o
+        if ($MaxConcurrency -gt 0) {
+            $existingLog.maxConcurrency = $MaxConcurrency
+        }
         
         # Save updated log
         $existingLog | ConvertTo-Json -Depth 10 | Set-Content $LogPath
@@ -85,7 +89,7 @@ function Update-RunningJobs {
         } elseif ($item.Type -eq "Process") {
             # Check Windows process
             $process = Get-Process -Id $item.Id -ErrorAction SilentlyContinue
-            $isStillRunning = ($process -ne $null)
+            $isStillRunning = ($null -ne $process)
         }
         
         if ($isStillRunning) {
@@ -296,7 +300,7 @@ foreach ($repo in $registry.repositories.PSObject.Properties) {
     
     if (-not (Test-Path $repoPath)) {
         Write-Host "   ⚠️  Repository path not found, skipping" -ForegroundColor Yellow
-        Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "validate" -Status "skipped" -Message "Repository path not found"
+        Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "validate" -Status "skipped" -Message "Repository path not found" -MaxConcurrency $MaxConcurrency
         Write-Host ""
         continue
     }
@@ -314,7 +318,7 @@ foreach ($repo in $registry.repositories.PSObject.Properties) {
             
             if ($?) {
                 Write-Host "   ✅ Dependencies installed" -ForegroundColor Green
-                Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "npm-install" -Status "success" -Message "Dependencies installed successfully"
+                Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "npm-install" -Status "success" -Message "Dependencies installed successfully" -MaxConcurrency $MaxConcurrency
             } else {
                 $errorMsg = "npm install failed"
                 if ($installOutput) {
@@ -324,7 +328,7 @@ foreach ($repo in $registry.repositories.PSObject.Properties) {
             }
         } catch {
             Write-Host "   ❌ Error during npm install: $($_.Exception.Message)" -ForegroundColor Red
-            Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "npm-install" -Status "failed" -Message "npm install failed" -ErrorDetails $_
+            Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "npm-install" -Status "failed" -Message "npm install failed" -ErrorDetails $_ -MaxConcurrency $MaxConcurrency
         } finally {
             Pop-Location
         }
@@ -347,13 +351,13 @@ foreach ($repo in $registry.repositories.PSObject.Properties) {
                     
                     if ($?) {
                         Write-Host "   ✅ Build completed" -ForegroundColor Green
-                        Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "npm-build" -Status "success" -Message "Build completed successfully"
+                        Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "npm-build" -Status "success" -Message "Build completed successfully" -MaxConcurrency $MaxConcurrency
                     } else {
                         throw "npm run build failed"
                     }
                 } catch {
                     Write-Host "   ❌ Error during build: $($_.Exception.Message)" -ForegroundColor Red
-                    Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "npm-build" -Status "failed" -Message "Build failed" -ErrorDetails $_
+                    Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "npm-build" -Status "failed" -Message "Build failed" -ErrorDetails $_ -MaxConcurrency $MaxConcurrency
                 } finally {
                     Pop-Location
                 }
@@ -405,10 +409,10 @@ foreach ($repo in $registry.repositories.PSObject.Properties) {
                     
                     $launchedServers += $repoName
                     Write-Host "   ✅ Dev server launched" -ForegroundColor Green
-                    Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "start-dev" -Status "success" -Message "Dev server launched successfully"
+                    Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "start-dev" -Status "success" -Message "Dev server launched successfully" -MaxConcurrency $MaxConcurrency
                 } catch {
                     Write-Host "   ❌ Error launching dev server: $($_.Exception.Message)" -ForegroundColor Red
-                    Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "start-dev" -Status "failed" -Message "Failed to launch dev server" -ErrorDetails $_
+                    Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "start-dev" -Status "failed" -Message "Failed to launch dev server" -ErrorDetails $_ -MaxConcurrency $MaxConcurrency
                 }
             } elseif ($pkg.scripts.PSObject.Properties.Name -contains "start") {
                 # Similar concurrency control for start script
@@ -455,21 +459,21 @@ foreach ($repo in $registry.repositories.PSObject.Properties) {
                     
                     $launchedServers += $repoName
                     Write-Host "   ✅ Server launched" -ForegroundColor Green
-                    Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "start-server" -Status "success" -Message "Server launched successfully"
+                    Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "start-server" -Status "success" -Message "Server launched successfully" -MaxConcurrency $MaxConcurrency
                 } catch {
                     Write-Host "   ❌ Error launching server: $($_.Exception.Message)" -ForegroundColor Red
-                    Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "start-server" -Status "failed" -Message "Failed to launch server" -ErrorDetails $_
+                    Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "start-server" -Status "failed" -Message "Failed to launch server" -ErrorDetails $_ -MaxConcurrency $MaxConcurrency
                 }
             } else {
                 Write-Host "   ℹ️  No dev/start script found" -ForegroundColor Gray
             }
         } catch {
             Write-Host "   ⚠️  Error processing package.json: $_" -ForegroundColor Yellow
-            Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "process-package" -Status "failed" -Message "Error processing package.json" -ErrorDetails $_
+            Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "process-package" -Status "failed" -Message "Error processing package.json" -ErrorDetails $_ -MaxConcurrency $MaxConcurrency
         }
     } else {
         Write-Host "   ℹ️  No package.json found" -ForegroundColor Gray
-        Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "validate" -Status "skipped" -Message "No package.json found"
+        Write-CockpitLog -LogPath $logPath -RepoName $repoName -Action "validate" -Status "skipped" -Message "No package.json found" -MaxConcurrency $MaxConcurrency
     }
     
     $processedRepos += $repoName

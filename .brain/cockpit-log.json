@@ -1,17 +1,17 @@
 {
-  "launchedServers": [],
+  "lastRun": "2026-02-19T14:26:42.0934805+00:00",
+  "platform": {
+    "edition": "Core",
+    "isWindows": false,
+    "version": "7.4.13",
+    "os": "Ubuntu 24.04.3 LTS"
+  },
   "processedRepos": [],
   "environment": {
-    "nodeVersion": "v24.13.0",
-    "npmVersion": "11.6.2"
+    "npmVersion": "11.6.2",
+    "nodeVersion": "v24.13.0"
   },
   "runningJobs": 0,
   "maxConcurrency": 2,
-  "lastRun": "2026-02-19T14:24:58.2299863+00:00",
-  "platform": {
-    "version": "7.4.13",
-    "edition": "Core",
-    "os": "Ubuntu 24.04.3 LTS",
-    "isWindows": false
-  }
+  "launchedServers": []
 }
