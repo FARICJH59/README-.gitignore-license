@@ -7,10 +7,20 @@ metadata:
   type: mvp
   license: MIT
   organization: TechFusion-Quantum-Global-Platform
-  repository: https://github.com/TechFusion-Quantum-Global-Platform/axiomcore
+  repository: https://github.com/FARICJH59/README-.gitignore-license
+  actualRepository: https://github.com/TechFusion-Quantum-Global-Platform/axiomcore
   visibility: private
   maintainers:
+    - FARICJH59
     - AxiomCore Team
+  contact:
+    email: farichva@gmail.com
+    owner: FARICJH59
+  compliance:
+    codeowners: .github/CODEOWNERS
+    securityPolicy: SECURITY.md
+    contributingGuide: CONTRIBUTING.md
+    dependabot: .github/dependabot.yml
 
 configuration:
   runtime:
@@ -53,6 +63,23 @@ configuration:
     enabled: true
     complianceMode: strict
     auditLogging: true
+    codeReview:
+      required: true
+      minApprovals: 1
+      dismissStaleReviews: true
+      requireCodeOwners: true
+    branchProtection:
+      main:
+        requirePullRequest: true
+        requireApprovals: 1
+        requireStatusChecks: true
+        requireUpToDate: true
+        enforceAdmins: false
+    securityScanning:
+      secretScanning: true
+      dependabotAlerts: true
+      dependabotSecurityUpdates: true
+      codeScanning: true
 
   ai:
     enabled: true
