@@ -1,0 +1,28 @@
+{
+  "description": "Infrastructure policy requirements for QGPS-managed projects",
+  "runtime": {
+    "nodeVersion": "18.x",
+    "pythonVersion": "3.10+",
+    "goVersion": "1.21+"
+  },
+  "containerization": {
+    "dockerVersion": "24.x",
+    "dockerComposeVersion": "2.x",
+    "kubernetesVersion": "1.28+"
+  },
+  "frameworks": {
+    "nextJsVersion": "14.x",
+    "reactVersion": "18.x",
+    "expressVersion": "4.x"
+  },
+  "security": {
+    "tlsVersion": "1.3",
+    "sslCertRequired": true,
+    "vulnerabilityScanRequired": true
+  },
+  "compliance": {
+    "enforceVersions": true,
+    "allowPrerelease": false,
+    "updateFrequency": "monthly"
+  }
+}

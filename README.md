@@ -1,10 +1,10 @@
-# AxiomCorePlatformRepo
+# axiomcore
 
-A full stack platform repo for AxiomCore
+AxiomCore MVP — backend, frontend, AI orchestration
 
 ## Description
 
-This repository serves as the foundation for the AxiomCore platform, providing a comprehensive full-stack solution. The project supports both PowerShell and Python development environments.
+This repository serves as the foundation for the AxiomCore MVP platform, providing backend services, frontend interfaces, and AI orchestration capabilities. The project is a comprehensive full-stack solution supporting both PowerShell and Python development environments.
 
 ## Features
 
@@ -22,29 +22,80 @@ This repository serves as the foundation for the AxiomCore platform, providing a
 
 ### Installation
 
-#### Option 1: Clone an Existing Repository
+#### Option 1: Clone the Repository
 
 Clone the repository:
 
 ```bash
-git clone https://github.com/<your-org>/AxiomCorePlatformRepo.git
-cd AxiomCorePlatformRepo
+git clone https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git
+cd axiomcore
 ```
 
-#### Option 2: Initialize a New Repository
+#### Option 2: Create a New Repository
 
-If you're starting a new AxiomCore project from scratch:
+If you need to create a new axiomcore repository, you can use the provided scripts:
+
+**Using Bash (Linux/macOS):**
+```bash
+./create-repo.sh
+```
+
+**Using PowerShell (Windows/Cross-platform):**
+```powershell
+./create-repo.ps1
+```
+
+**Or manually with GitHub CLI:**
+```bash
+gh repo create TechFusion-Quantum-Global-Platform/axiomcore \
+  --private \
+  --description "AxiomCore MVP — backend, frontend, AI orchestration" \
+  --confirm
+```
+
+After creating the repository, you can initialize it with your project files:
 
 ```bash
-git init
+# Clone the empty repository
+git clone https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git
+cd axiomcore
+
+# Copy your project files into the directory
+# Then commit and push them
 git add .
 git commit -m "Initial commit"
-git branch -M main
-git remote add origin git@github.com:<your-org>/AxiomCorePlatformRepo.git
 git push -u origin main
 ```
 
-> **Note**: Option 1 uses HTTPS for cloning (works without SSH keys), while Option 2 uses SSH for pushing (requires SSH key setup). You can use either protocol for both operations based on your preference and authentication setup.
+> **Note**: Option 2 requires GitHub CLI (`gh`) to be installed and authenticated. The repository will be created as private under the TechFusion-Quantum-Global-Platform organization.
+
+## QGPS Autonomous Cockpit
+
+The QGPS Autonomous Cockpit provides automated orchestration for multiple repositories with dependency management and dev server launch capabilities.
+
+### Usage
+
+```powershell
+# Start all registered repositories
+.\scripts\qgps-cockpit.ps1
+
+# Specify max concurrency (default: 2)
+.\scripts\qgps-cockpit.ps1 -MaxConcurrency 3
+```
+
+### Features
+
+- **Automatic Dependency Installation**: Runs `npm install` for all registered repositories with package.json
+- **Smart Building**: Executes build scripts if they exist in package.json
+- **Dev Server Launch**: Automatically starts dev servers in separate PowerShell windows
+- **Logging**: All cockpit runs are logged to `.brain/cockpit-log.json`
+
+### Prerequisites
+
+Before using the cockpit, ensure:
+1. Repositories are registered using `.\scripts\generate-autopilot-repo.ps1`
+2. Node.js and npm are installed for JavaScript/TypeScript projects
+3. Brain core is initialized with `brain-core/repo-registry.json`
 
 ## License
 

@@ -1,0 +1,20 @@
+{
+  "mandatoryFolders": [
+    "src",
+    "config",
+    "docs",
+    ".brain"
+  ],
+  "mandatoryFiles": [
+    "README.md",
+    "LICENSE",
+    ".gitignore"
+  ],
+  "recommendedFiles": [
+    "package.json",
+    "Dockerfile",
+    ".env.example"
+  ],
+  "description": "Mandatory structure requirements for all QGPS-managed repositories",
+  "enforcementLevel": "strict"
+}

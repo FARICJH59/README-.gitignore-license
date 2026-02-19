@@ -1,0 +1,9 @@
+{
+  "description": "QGPS Repository Registry - Tracks all managed repositories",
+  "repositories": {},
+  "metadata": {
+    "totalRepos": 0,
+    "lastSync": null,
+    "registryVersion": "1.0.0"
+  }
+}

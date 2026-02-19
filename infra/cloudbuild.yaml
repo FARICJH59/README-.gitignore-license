@@ -1,0 +1,30 @@
+# Cloud Build Configuration for AxiomCore MVP
+# Automated build and deployment pipeline
+
+steps:
+  # Build backend API
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/axiomcore-api:$COMMIT_SHA', './api']
+  
+  # Build frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/axiomcore-frontend:$COMMIT_SHA', './frontend']
+  
+  # Push images to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/axiomcore-api:$COMMIT_SHA']
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/axiomcore-frontend:$COMMIT_SHA']
+
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/axiomcore-api:$COMMIT_SHA'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/axiomcore-frontend:$COMMIT_SHA'
+
+substitutions:
+  _REGION: 'us-central1'
+  _REPOSITORY: 'axiomcore-mvp'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY

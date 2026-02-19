@@ -1,0 +1,40 @@
+# CODEOWNERS for AxiomCore Repository
+# This file defines individuals or teams responsible for code review in specific parts of the repository
+# Lines starting with # are comments
+
+# Default owners for everything in the repo
+# These owners will be requested for review when someone opens a pull request
+*       @FARICJH59
+
+# Enterprise Configuration & Governance
+/project.yaml                           @FARICJH59
+/brain-core/                           @FARICJH59
+/.github/                              @FARICJH59
+/LICENSE                               @FARICJH59
+
+# Infrastructure & Deployment
+/infra/                                @FARICJH59
+/scripts/deploy-*.ps1                  @FARICJH59
+/.github/workflows/                    @FARICJH59
+
+# Core Scripts & Orchestration
+/scripts/axiom-*.ps1                   @FARICJH59
+/scripts/qgps-*.ps1                    @FARICJH59
+/multi-agent-dashboard.ps1             @FARICJH59
+
+# Documentation
+*.md                                   @FARICJH59
+/docs/                                 @FARICJH59
+
+# API & Backend
+/api/                                  @FARICJH59
+
+# Frontend
+/frontend/                             @FARICJH59
+
+# AI & ML Components
+/ai/                                   @FARICJH59
+
+# Security & Compliance
+SECURITY.md                            @FARICJH59
+/brain-core/compliance/                @FARICJH59

@@ -44,7 +44,7 @@ jobs:
         shell: pwsh
         run: |
           Set-StrictMode -Version Latest
-          .\deploy-axiomcore-fullstack.ps1
+          .\scripts\deploy-axiomcore-fullstack.ps1
 
       # 7️⃣ Optional: Post-deploy status
       - name: Deployment completed
