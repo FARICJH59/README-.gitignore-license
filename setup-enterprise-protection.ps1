@@ -25,6 +25,59 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Validate script location - must be run from repository root
+function Test-RepositoryLocation {
+    $scriptDir = $PSScriptRoot
+    $requiredFiles = @("scripts", ".github", "README.md")
+    $missingFiles = @()
+    
+    foreach ($file in $requiredFiles) {
+        $filePath = Join-Path $scriptDir $file
+        if (-not (Test-Path $filePath)) {
+            $missingFiles += $file
+        }
+    }
+    
+    if ($missingFiles.Count -gt 0) {
+        Write-Host ""
+        Write-Host "═" * 70 -ForegroundColor Red
+        Write-Host "❌ ERROR: Script Not Run From Repository Root" -ForegroundColor Red
+        Write-Host "═" * 70 -ForegroundColor Red
+        Write-Host ""
+        Write-Host "This script must be run from the repository root directory." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Current location: $scriptDir" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "Missing required files/folders:" -ForegroundColor Yellow
+        foreach ($missing in $missingFiles) {
+            Write-Host "  • $missing" -ForegroundColor Red
+        }
+        Write-Host ""
+        Write-Host "To fix this issue:" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "1. Navigate to your repository directory:" -ForegroundColor White
+        Write-Host "   cd C:\path\to\your\repository" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "2. Verify you're in the correct location:" -ForegroundColor White
+        Write-Host "   ls" -ForegroundColor Gray
+        Write-Host "   # Should show: scripts/, .github/, README.md, setup-enterprise-protection.ps1" -ForegroundColor DarkGray
+        Write-Host ""
+        Write-Host "3. Run the script again:" -ForegroundColor White
+        Write-Host "   .\setup-enterprise-protection.ps1" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "═" * 70 -ForegroundColor Red
+        Write-Host ""
+        return $false
+    }
+    
+    return $true
+}
+
+# Check if running from correct location
+if (-not (Test-RepositoryLocation)) {
+    exit 1
+}
+
 # Color output functions
 function Write-ColorOutput {
     param(

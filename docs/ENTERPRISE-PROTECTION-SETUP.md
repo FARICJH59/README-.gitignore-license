@@ -213,7 +213,42 @@ yamllint .github/workflows/ci-cd-autopilot.yml
 
 ### Common Issues
 
-#### 1. GitHub CLI Not Found
+#### 1. Script Not Recognized / File Not Found
+
+**Error:**
+```
+.\setup-enterprise-protection.ps1: The term '.\setup-enterprise-protection.ps1' is not recognized as a name of a cmdlet, function, script file, or executable program.
+```
+
+**Cause:** You are not in the repository directory where the script is located.
+
+**Solution:**
+```powershell
+# Navigate to your repository directory
+cd C:\path\to\your\repository
+# Example: cd C:\Users\YourName\Documents\axiomcore
+
+# Verify you're in the correct location
+ls setup-enterprise-protection.ps1
+# Should show: -rw-r--r-- setup-enterprise-protection.ps1
+
+# Now run the script
+.\setup-enterprise-protection.ps1
+```
+
+**Alternative Solution (if you cloned the repository):**
+```powershell
+# Find your repository
+cd ~
+Get-ChildItem -Recurse -Filter "setup-enterprise-protection.ps1" -ErrorAction SilentlyContinue | Select-Object Directory -First 1
+
+# Or search in common locations
+cd ~\Documents
+cd ~\GitHub
+cd ~\projects
+```
+
+#### 2. GitHub CLI Not Found
 
 **Error:**
 ```
@@ -232,7 +267,7 @@ brew install gh
 sudo apt install gh
 ```
 
-#### 2. No GitHub Token
+#### 3. No GitHub Token
 
 **Error:**
 ```
@@ -254,7 +289,7 @@ Required scopes:
 - `repo` - Full repository access
 - `workflow` - Update workflows
 
-#### 3. Missing Scripts
+#### 4. Missing Scripts
 
 **Error:**
 ```
@@ -268,7 +303,7 @@ Ensure all required scripts are present in the `scripts` directory:
 - `axiom-orchestrator.ps1`
 - `qgps-cockpit.ps1`
 
-#### 4. Permission Denied
+#### 5. Permission Denied
 
 **Error:**
 ```
@@ -280,7 +315,7 @@ Permission denied when accessing repository
 - Verify your GitHub token has the correct scopes
 - Check if you're authenticated with GitHub CLI: `gh auth status`
 
-#### 5. Workflow Not Found
+#### 6. Workflow Not Found
 
 **Error:**
 ```

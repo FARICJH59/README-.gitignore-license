@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-02-19T16:27:02.5594463+00:00",
+  "lastRun": "2026-02-19T16:33:10.0652397+00:00",
   "setupVersion": "1.0.0",
   "entries": [
     null,
@@ -234,6 +234,122 @@
       "status": "completed",
       "message": "",
       "timestamp": "2026-02-19T16:27:02.5582172+00:00"
+    },
+    {
+      "status": "running",
+      "message": "Starting enterprise protection setup",
+      "action": "setup-start",
+      "timestamp": "2026-02-19T16:32:48.3810991+00:00"
+    },
+    {
+      "status": "completed",
+      "message": "",
+      "action": "validate-prerequisites",
+      "details": {
+        "gitAvailable": true,
+        "hasToken": true,
+        "ghAvailable": true
+      },
+      "timestamp": "2026-02-19T16:32:50.3184271+00:00"
+    },
+    {
+      "status": "completed",
+      "message": "",
+      "action": "verify-structure",
+      "details": {
+        "missingFolders": []
+      },
+      "timestamp": "2026-02-19T16:32:50.3273343+00:00"
+    },
+    {
+      "status": "completed",
+      "message": "",
+      "action": "verify-scripts",
+      "timestamp": "2026-02-19T16:32:50.3370563+00:00"
+    },
+    {
+      "status": "completed",
+      "message": "",
+      "action": "verify-workflow",
+      "timestamp": "2026-02-19T16:32:50.3622637+00:00"
+    },
+    {
+      "status": "info",
+      "message": "Manual configuration required via GitHub UI",
+      "action": "configure-branch-protection",
+      "timestamp": "2026-02-19T16:32:50.3739117+00:00"
+    },
+    {
+      "status": "completed",
+      "message": "",
+      "action": "setup-complete",
+      "details": {
+        "branchProtectionConfigured": true,
+        "branch": "main",
+        "repository": "FARICJH59/axiomcore",
+        "timestamp": "2026-02-19T16:32:50.3791109+00:00",
+        "scriptsVerified": true,
+        "workflowExists": true
+      },
+      "timestamp": "2026-02-19T16:32:50.3804286+00:00"
+    },
+    {
+      "status": "running",
+      "message": "Starting enterprise protection setup",
+      "timestamp": "2026-02-19T16:33:09.9086668+00:00",
+      "action": "setup-start"
+    },
+    {
+      "details": {
+        "ghAvailable": true,
+        "hasToken": true,
+        "gitAvailable": true
+      },
+      "status": "completed",
+      "message": "",
+      "timestamp": "2026-02-19T16:33:10.0024461+00:00",
+      "action": "validate-prerequisites"
+    },
+    {
+      "details": {
+        "missingFolders": []
+      },
+      "status": "completed",
+      "message": "",
+      "timestamp": "2026-02-19T16:33:10.0128047+00:00",
+      "action": "verify-structure"
+    },
+    {
+      "status": "completed",
+      "message": "",
+      "timestamp": "2026-02-19T16:33:10.0218455+00:00",
+      "action": "verify-scripts"
+    },
+    {
+      "status": "completed",
+      "message": "",
+      "timestamp": "2026-02-19T16:33:10.0485901+00:00",
+      "action": "verify-workflow"
+    },
+    {
+      "status": "info",
+      "message": "Manual configuration required via GitHub UI",
+      "timestamp": "2026-02-19T16:33:10.0580097+00:00",
+      "action": "configure-branch-protection"
+    },
+    {
+      "details": {
+        "timestamp": "2026-02-19T16:33:10.0622708+00:00",
+        "scriptsVerified": true,
+        "branchProtectionConfigured": true,
+        "workflowExists": true,
+        "branch": "main",
+        "repository": "FARICJH59/axiomcore"
+      },
+      "status": "completed",
+      "message": "",
+      "timestamp": "2026-02-19T16:33:10.0635707+00:00",
+      "action": "setup-complete"
     }
   ]
 }

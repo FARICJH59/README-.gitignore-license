@@ -75,13 +75,20 @@ The repository includes an automated setup script to configure enterprise-level 
 
 ### Quick Start
 
-Run the setup script from the repository root:
+**Important:** You must run this script from the repository root directory.
 
 ```powershell
-# Basic setup
+# Step 1: Navigate to your repository directory
+cd C:\path\to\your\repository
+# Example: cd C:\Users\YourName\Documents\axiomcore
+
+# Step 2: Verify you're in the correct location (should show setup-enterprise-protection.ps1)
+ls setup-enterprise-protection.ps1
+
+# Step 3: Run the setup script
 .\setup-enterprise-protection.ps1
 
-# Specify repository details
+# Alternative: Specify repository details
 .\setup-enterprise-protection.ps1 -RepoOwner "YourOrg" -RepoName "axiomcore"
 
 # Dry run (preview changes without applying)
@@ -90,6 +97,8 @@ Run the setup script from the repository root:
 # With GitHub token for API access
 .\setup-enterprise-protection.ps1 -GitHubToken $env:GITHUB_TOKEN
 ```
+
+**Common Error:** If you see "The term '.\setup-enterprise-protection.ps1' is not recognized", you are not in the repository directory. Navigate to the repository root first using `cd`.
 
 ### What the Script Does
 
