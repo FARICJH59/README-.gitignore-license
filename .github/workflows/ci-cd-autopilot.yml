@@ -40,7 +40,7 @@ jobs:
           & "$RootPath\scripts\axiom-orchestrator.ps1" -Action status
       
       - name: Upload Compliance Logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: compliance-logs-${{ matrix.repo }}
@@ -48,7 +48,7 @@ jobs:
           if-no-files-found: warn
       
       - name: Upload Sync Metadata
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: sync-metadata-${{ matrix.repo }}
