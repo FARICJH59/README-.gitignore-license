@@ -81,21 +81,68 @@ The QGPS Autonomous Cockpit provides automated orchestration for multiple reposi
 
 # Specify max concurrency (default: 2)
 .\scripts\qgps-cockpit.ps1 -MaxConcurrency 3
+
+# Use custom brain core path
+.\scripts\qgps-cockpit.ps1 -BrainCorePath "C:\custom\brain-core"
 ```
 
 ### Features
 
 - **Automatic Dependency Installation**: Runs `npm install` for all registered repositories with package.json
 - **Smart Building**: Executes build scripts if they exist in package.json
-- **Dev Server Launch**: Automatically starts dev servers in separate PowerShell windows
-- **Logging**: All cockpit runs are logged to `.brain/cockpit-log.json`
+- **Dev Server Launch**: Automatically starts dev servers in separate PowerShell windows (Windows) or background jobs (Linux/macOS)
+- **Comprehensive Logging**: All cockpit runs are logged to `.brain/cockpit-log.json` with detailed error tracking
+- **Environment Validation**: Checks Node.js and npm versions before processing
+- **Concurrency Control**: Respects MaxConcurrency parameter to limit simultaneous server launches
+- **Cross-Platform Support**: Works on Windows (PowerShell 5.1+), Linux, and macOS (PowerShell Core 7+)
+- **Registry Validation**: Validates repo-registry.json structure with helpful error messages
+
+### Error Handling & Logging
+
+The cockpit now includes comprehensive error handling:
+- Try/catch blocks around all npm operations
+- Detailed error logs with timestamps, stack traces, and error categories
+- Fallback behavior for missing or malformed configuration files
+- Warning messages for non-critical issues
+
+Error logs are stored in `.brain/cockpit-log.json` with the following structure:
+```json
+{
+  "lastRun": "2026-02-19T14:21:28.2940131+00:00",
+  "processedRepos": ["repo1", "repo2"],
+  "launchedServers": ["repo1"],
+  "maxConcurrency": 2,
+  "runningJobs": 1,
+  "platform": {
+    "edition": "Core",
+    "version": "7.4.13",
+    "os": "Ubuntu 24.04.3 LTS",
+    "isWindows": false
+  },
+  "environment": {
+    "nodeVersion": "v24.13.0",
+    "npmVersion": "11.6.2"
+  },
+  "detailedLogs": [
+    {
+      "timestamp": "2026-02-19T14:21:28.5Z",
+      "repository": "repo1",
+      "action": "npm-install",
+      "status": "success",
+      "message": "Dependencies installed successfully"
+    }
+  ]
+}
+```
 
 ### Prerequisites
 
 Before using the cockpit, ensure:
 1. Repositories are registered using `.\scripts\generate-autopilot-repo.ps1`
-2. Node.js and npm are installed for JavaScript/TypeScript projects
-3. Brain core is initialized with `brain-core/repo-registry.json`
+2. Node.js 18.x or higher is installed for JavaScript/TypeScript projects
+3. npm is installed and available in PATH
+4. Brain core is initialized with `brain-core/repo-registry.json`
+5. For cross-platform usage, PowerShell Core 7+ is recommended
 
 ## License
 
