@@ -2,6 +2,8 @@
 
 AxiomCore MVP — backend, frontend, AI orchestration
 
+**Yes, this is the canonical AxiomCore MVP repository.**
+
 ## Description
 
 This repository serves as the foundation for the AxiomCore MVP platform, providing backend services, frontend interfaces, and AI orchestration capabilities. The project is a comprehensive full-stack solution supporting both PowerShell and Python development environments.
