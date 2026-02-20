@@ -8,9 +8,11 @@ terraform {
     }
   }
   
+  # Backend configuration should be provided via -backend-config flags during init
+  # Example: terraform init \
+  #   -backend-config="bucket=axiomcore-terraform-state" \
+  #   -backend-config="prefix=gcp/terraform.tfstate"
   backend "gcs" {
-    bucket = "${var.project_name}-terraform-state"
-    prefix = "gcp/terraform.tfstate"
   }
 }
 

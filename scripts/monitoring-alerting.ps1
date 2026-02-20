@@ -183,15 +183,16 @@ function Get-MLMetrics {
         $mlPods = kubectl get pods -n axiomcore -l component=ml -o json 2>$null | ConvertFrom-Json
         
         foreach ($pod in $mlPods.items) {
-            # In a real implementation, you would query the ML service API
-            # For now, we'll create a placeholder structure
+            # TODO: Query the ML service API for actual metrics
+            # This is a placeholder structure for ML metrics
+            # In production, replace with actual API calls to ML service
             $modelMetric = @{
                 name = $pod.metadata.name
                 status = $pod.status.phase
                 lastInference = Get-Date -Format "o"
                 inferenceCount = 0
                 averageLatency = 0
-                accuracy = 0.95
+                accuracy = 0.0  # Placeholder - query from ML service API
             }
             
             $mlMetrics.models += $modelMetric

@@ -8,12 +8,14 @@ terraform {
     }
   }
   
+  # Backend configuration should be provided via -backend-config flags during init
+  # Example: terraform init \
+  #   -backend-config="bucket=axiomcore-terraform-state" \
+  #   -backend-config="key=aws/terraform.tfstate" \
+  #   -backend-config="region=us-east-1" \
+  #   -backend-config="encrypt=true" \
+  #   -backend-config="dynamodb_table=axiomcore-terraform-locks"
   backend "s3" {
-    bucket         = "${var.project_name}-terraform-state"
-    key            = "aws/terraform.tfstate"
-    region         = var.aws_region
-    encrypt        = true
-    dynamodb_table = "${var.project_name}-terraform-locks"
   }
 }
 

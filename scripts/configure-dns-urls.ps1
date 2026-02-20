@@ -23,7 +23,10 @@ param(
     [switch]$EnableSSL = $true,
     
     [Parameter(Mandatory=$false)]
-    [switch]$DryRun
+    [switch]$DryRun,
+    
+    [Parameter(Mandatory=$false)]
+    [string]$CertManagerVersion = "v1.13.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -186,8 +189,8 @@ if ($EnableSSL) {
     if ($DryRun) {
         Write-Host "  [DRY RUN] Would request certificates for: $certDomains" -ForegroundColor Gray
     } else {
-        Write-Host "  Installing cert-manager (if not present)..." -ForegroundColor Yellow
-        # kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.0/cert-manager.yaml
+        Write-Host "  Installing cert-manager $CertManagerVersion (if not present)..." -ForegroundColor Yellow
+        # kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$CertManagerVersion/cert-manager.yaml
         
         Write-Host "  Waiting for cert-manager to be ready..." -ForegroundColor Yellow
         # kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager -n cert-manager
