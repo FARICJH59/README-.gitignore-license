@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: axiomcore
+  labels:
+    name: axiomcore
+    environment: production
+    managed-by: axiomcore-deployment

@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: axiomcore-admin
+  namespace: axiomcore
+  labels:
+    role: admin
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: axiomcore-developer
+  namespace: axiomcore
+  labels:
+    role: developer
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: axiomcore-readonly
+  namespace: axiomcore
+  labels:
+    role: readonly
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: axiomcore-admin-role
+  namespace: axiomcore
+rules:
+- apiGroups: ["", "apps", "batch", "extensions", "networking.k8s.io"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: axiomcore-developer-role
+  namespace: axiomcore
+rules:
+- apiGroups: ["", "apps", "batch"]
+  resources: ["pods", "pods/log", "deployments", "services", "configmaps", "secrets", "jobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: axiomcore-readonly-role
+  namespace: axiomcore
+rules:
+- apiGroups: ["", "apps", "batch", "networking.k8s.io"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: axiomcore-admin-binding
+  namespace: axiomcore
+subjects:
+- kind: ServiceAccount
+  name: axiomcore-admin
+  namespace: axiomcore
+roleRef:
+  kind: Role
+  name: axiomcore-admin-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: axiomcore-developer-binding
+  namespace: axiomcore
+subjects:
+- kind: ServiceAccount
+  name: axiomcore-developer
+  namespace: axiomcore
+roleRef:
+  kind: Role
+  name: axiomcore-developer-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: axiomcore-readonly-binding
+  namespace: axiomcore
+subjects:
+- kind: ServiceAccount
+  name: axiomcore-readonly
+  namespace: axiomcore
+roleRef:
+  kind: Role
+  name: axiomcore-readonly-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Network Policy for pod-to-pod communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: axiomcore-network-policy
+  namespace: axiomcore
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: axiomcore
+    - podSelector: {}
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: axiomcore
+    - podSelector: {}
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+---
+# Pod Security Policy
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: axiomcore-restricted
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'runtime/default'
+    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: false
