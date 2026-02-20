@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: axiomcore-config
+  namespace: axiomcore
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  API_INGESTION_URL: "http://api-ingestion:8081"
+  API_DASHBOARD_URL: "http://api-dashboard:8082"
+  API_OPTIMIZATION_URL: "http://api-optimization:8083"
+  API_BILLING_URL: "http://api-billing:8084"
+  METRICS_ENABLED: "true"
+  TELEMETRY_ENDPOINT: "http://prometheus:9090"
+  LOG_AGGREGATION_ENDPOINT: "http://loki:3100"
