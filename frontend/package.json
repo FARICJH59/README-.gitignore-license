@@ -1,0 +1,37 @@
+{
+  "name": "axiomcore-frontend",
+  "version": "1.0.0",
+  "description": "AxiomCore MVP Frontend Application",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "build": "echo 'Build step placeholder'",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "security:audit": "npm audit --audit-level=moderate"
+  },
+  "keywords": [
+    "axiomcore",
+    "frontend",
+    "react"
+  ],
+  "author": "FARICJH59 <farichva@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "compression": "^1.7.4",
+    "helmet": "^7.1.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "eslint": "^8.55.0"
+  }
+}

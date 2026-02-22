@@ -176,3 +176,28 @@ infra/terraform/.terraform.lock.hcl
 # Deployment artifacts
 last-deployment.json
 *.log
+
+# Environment files (keep .example files)
+.env
+.env.local
+.env.*.local
+api/.env
+frontend/.env
+!.env.example
+!api/.env.example
+!frontend/.env.example
+!.env.docker
+
+# Docker volumes and runtime
+docker-compose.override.yml
+
+# Monitoring data
+infra/monitoring/data/
+
+# Secrets and credentials
+secrets/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
