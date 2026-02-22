@@ -1,0 +1,17 @@
+# Production Environment Configuration
+aws_region         = "us-west-2"
+environment        = "production"
+vpc_cidr          = "10.0.0.0/16"
+availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+
+# Compute Resources
+api_cpu         = 512
+api_memory      = 1024
+frontend_cpu    = 512
+frontend_memory = 1024
+
+# Feature Flags
+enable_monitoring = true
+enable_backup     = true
+
+# Tags (inherited from provider default_tags)
