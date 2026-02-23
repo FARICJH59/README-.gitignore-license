@@ -13,12 +13,12 @@ Renames a GitHub repository and optionally updates local clones.
   -DryRun
 
 .EXAMPLE
-# Example: rename README-.gitignore-license to Axiomcore-SYSTEM
+# Example scenario: replace values to rename a repository (e.g., README-.gitignore-license -> Axiomcore-SYSTEM)
 ./scripts/rename-github-repo.ps1 `
-  -Owner FARICJH59 `
+  -Owner YourGitHubOwner `
   -Token (ConvertTo-SecureString 'YOUR_PAT' -AsPlainText -Force) `
-  -OldRepoName README-.gitignore-license `
-  -NewRepoName Axiomcore-SYSTEM `
+  -OldRepoName source-repo-name `
+  -NewRepoName target-repo-name `
   -LocalRoot C:\Users\User\Projects `
   -MaxDepth 3 `
   -DryRun
@@ -75,7 +75,7 @@ $plainToken = Convert-TokenToPlainText -SecureToken $Token
 $remoteUri = "https://api.github.com/repos/$Owner/$OldRepoName"
 $headers = @{
     Authorization = "Bearer $plainToken"
-    "User-Agent"  = "PowerShell-RepoRename/1.0 (+https://github.com/$Owner/$OldRepoName)"
+    "User-Agent"  = "PowerShell-RepoRename/1.0 (+https://github.com/$Owner)"
     Accept        = "application/vnd.github+json"
     "Content-Type" = "application/json"
 }
@@ -127,7 +127,12 @@ if ($useDepthParam) {
     $directories | Where-Object { $_.Name -eq $OldRepoName } | ForEach-Object { $targets.Add($_) }
 } else {
     $directories | ForEach-Object {
-        $relativePath = [IO.Path]::GetFullPath($_.FullName).Substring($resolvedRoot.Length)
+        $fullPath = [IO.Path]::GetFullPath($_.FullName)
+        if (-not $fullPath.StartsWith($resolvedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+            continue
+        }
+
+        $relativePath = $fullPath.Substring($resolvedRoot.Length)
         $segments = $relativePath.Split([IO.Path]::DirectorySeparatorChar, [System.StringSplitOptions]::RemoveEmptyEntries)
         if ($segments.Length -le $MaxDepth -and $_.Name -eq $OldRepoName) {
             $targets.Add($_)
