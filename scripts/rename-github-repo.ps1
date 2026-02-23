@@ -36,6 +36,11 @@ if (-not $LogPath) {
     $LogPath = Join-Path -Path $PSScriptRoot -ChildPath "rename-repo-$timestamp.log"
 }
 
+$logDirectory = Split-Path -Parent -Path $LogPath
+if ($logDirectory -and -not (Test-Path -Path $logDirectory)) {
+    New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
+}
+
 New-Item -ItemType File -Force -Path $LogPath | Out-Null
 
 function Write-Log {
@@ -60,7 +65,16 @@ function Resolve-RepoBaseUrl {
         return $CustomBase.TrimEnd("/")
     }
 
-    $uri = [Uri]$ApiUrl
+    try {
+        if ($ApiUrl -notmatch "^https?://") {
+            $ApiUrl = "https://$ApiUrl"
+        }
+        $uri = [Uri]$ApiUrl
+    }
+    catch {
+        Write-Log "Invalid API base URL '$ApiUrl': $($_.Exception.Message)" "ERROR" ([ConsoleColor]::Red)
+        throw
+    }
     $base = $uri.GetLeftPart([System.UriPartial]::Authority)
 
     if ($uri.Host -like "api.*") {
@@ -124,8 +138,14 @@ function Invoke-GitHubApi {
 # Step 1: Rename repository
 try {
     $renameUri = "$ApiBaseUrl/repos/$Owner/$OldRepoName"
-    Invoke-GitHubApi -Method PATCH -Uri $renameUri -Body @{ name = $NewRepoName } | Out-Null
-    Write-Log "Repository rename request sent successfully." "SUCCESS" ([ConsoleColor]::Green)
+    $renameBody = @{ name = $NewRepoName }
+    if ($DryRun) {
+        Write-Log "DRY RUN: Skipped sending repository rename request to '$renameUri'." "INFO" ([ConsoleColor]::DarkYellow)
+    }
+    else {
+        Invoke-GitHubApi -Method PATCH -Uri $renameUri -Body $renameBody | Out-Null
+        Write-Log "Repository rename request sent successfully." "SUCCESS" ([ConsoleColor]::Green)
+    }
 }
 catch {
     Write-Log "Repository rename failed. See log for details." "ERROR" ([ConsoleColor]::Red)
@@ -155,11 +175,22 @@ try {
         Force       = $true
         ErrorAction = "SilentlyContinue"
     }
-    if ($MaxDepth -gt 0) {
-        $gitSearchParams["Depth"] = $MaxDepth
-    }
+    $pathSeparators = @([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
+    $normalizedRoot = [System.IO.Path]::GetFullPath($LocalRoot)
+    $trimmedRoot    = $normalizedRoot.TrimEnd($pathSeparators)
+    $rootSegments   = $trimmedRoot.Split($pathSeparators, [System.StringSplitOptions]::RemoveEmptyEntries).Count
 
-    $gitPaths = Get-ChildItem @gitSearchParams | Where-Object { $_.Name -eq ".git" }
+    $gitPaths = Get-ChildItem @gitSearchParams | ForEach-Object {
+        if ($_.Name -ne ".git") { return }
+
+        $currentPath     = [System.IO.Path]::GetFullPath($_.FullName)
+        $currentTrimmed  = $currentPath.TrimEnd($pathSeparators)
+        $currentSegments = $currentTrimmed.Split($pathSeparators, [System.StringSplitOptions]::RemoveEmptyEntries).Count
+
+        if ($MaxDepth -le 0 -or $currentSegments -le ($rootSegments + $MaxDepth)) {
+            $_
+        }
+    }
     Write-Log "Found $($gitPaths.Count) git directories under $LocalRoot." "INFO" ([ConsoleColor]::Gray)
 }
 catch {
@@ -195,6 +226,14 @@ $sshRemotePattern = "^git@[^:]+:$escapedOwner/$escapedOldRepo(\.git)?$"
 $sshUrlPattern = "^ssh://git@[^/]+/$escapedOwner/$escapedOldRepo(\.git)?$"
 $workflowPattern = "(https?://|git@|ssh://git@)[^\s]*/$escapedOwner/$escapedOldRepo(\.git)?"
 
+try {
+    Get-Command git -ErrorAction Stop | Out-Null
+}
+catch {
+    Write-Log "git executable not found on PATH. Please install git and retry." "ERROR" ([ConsoleColor]::Red)
+    exit 1
+}
+
 foreach ($gitDir in $gitPaths) {
     $repoPath = $gitDir.Parent.FullName
     try {
@@ -214,7 +253,7 @@ foreach ($gitDir in $gitPaths) {
             continue
         }
 
-        $newRemote = if ($currentRemote -like "git@*") { $newSshRemote } else { $newHttpsRemote }
+        $newRemote = if ($currentRemote -match $sshRemotePattern -or $currentRemote -match $sshUrlPattern) { $newSshRemote } else { $newHttpsRemote }
 
         if ($DryRun) {
             Write-Log "DRY RUN: Would update origin in $repoPath from $currentRemote to $newRemote" "INFO" ([ConsoleColor]::DarkYellow)
