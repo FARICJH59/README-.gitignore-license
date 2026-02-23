@@ -63,7 +63,7 @@ if ($OldRepoName -eq $NewRepoName) {
 $plainToken = Convert-TokenToPlainText -SecureToken $Token
 $remoteUri = "https://api.github.com/repos/$Owner/$OldRepoName"
 $headers = @{
-    Authorization = "token $plainToken"
+    Authorization = "Bearer $plainToken"
     "User-Agent"  = "repo-rename-script"
     Accept        = "application/vnd.github+json"
 }
@@ -103,15 +103,22 @@ $gciParams = @{
     Recurse   = $true
 }
 
-if ((Get-Command Get-ChildItem).Parameters.ContainsKey("Depth")) {
+$useDepthParam = (Get-Command Get-ChildItem).Parameters.ContainsKey("Depth")
+if ($useDepthParam) {
     $gciParams["Depth"] = $MaxDepth
 }
 
-Get-ChildItem @gciParams | ForEach-Object {
-    $relative = $_.FullName.Substring($resolvedRoot.Length).TrimStart('\','/')
-    $depth = if ($relative) { ($relative -split '[\\/]').Length } else { 0 }
-    if ($depth -le $MaxDepth -and $_.Name -eq $OldRepoName) {
-        $targets.Add($_)
+$directories = Get-ChildItem @gciParams
+
+if ($useDepthParam) {
+    $directories | Where-Object { $_.Name -eq $OldRepoName } | ForEach-Object { $targets.Add($_) }
+} else {
+    $directories | ForEach-Object {
+        $relative = $_.FullName.Substring($resolvedRoot.Length).TrimStart('\','/')
+        $depth = if ($relative) { ($relative -split '[\\/]').Length } else { 0 }
+        if ($depth -le $MaxDepth -and $_.Name -eq $OldRepoName) {
+            $targets.Add($_)
+        }
     }
 }
 
@@ -138,21 +145,34 @@ foreach ($dir in $targets) {
     $gitBasePath = if ($DryRun) { $dir.FullName } else { $newPath }
     $gitPath = Join-Path $gitBasePath ".git"
     if (Test-Path $gitPath) {
-        if ($DryRun) {
-            Write-Step "DRY RUN: Would update git remote origin to https://github.com/$Owner/$NewRepoName.git." 
-        } elseif (Get-Command git -ErrorAction SilentlyContinue) {
-            try {
-                $gitOutput = git -C $newPath remote set-url origin "https://github.com/$Owner/$NewRepoName.git" 2>&1
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Step "⚠️  Failed to update git remote: $gitOutput" ([ConsoleColor]::Yellow)
-                } else {
-                    Write-Step "🔗 Updated git remote origin." ([ConsoleColor]::Green)
+        $newRemoteUrl = "https://github.com/$Owner/$NewRepoName.git"
+        if (Get-Command git -ErrorAction SilentlyContinue) {
+            $currentRemote = git -C $gitBasePath remote get-url origin 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                $currentRemote = $currentRemote.Trim()
+                if ($currentRemote -match "^git@github.com:") {
+                    $newRemoteUrl = "git@github.com:$Owner/$NewRepoName.git"
+                } elseif ($currentRemote -match "^ssh://git@github.com/") {
+                    $newRemoteUrl = "ssh://git@github.com/$Owner/$NewRepoName.git"
                 }
-            } catch {
-                Write-Step "⚠️  Failed to update git remote: $($_.Exception.Message)" ([ConsoleColor]::Yellow)
+            }
+
+            if ($DryRun) {
+                Write-Step "DRY RUN: Would update git remote origin to $newRemoteUrl." 
+            } else {
+                try {
+                    $gitOutput = git -C $gitBasePath remote set-url origin $newRemoteUrl 2>&1
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Step "⚠️  Failed to update git remote: $gitOutput" ([ConsoleColor]::Yellow)
+                    } else {
+                        Write-Step "🔗 Updated git remote origin." ([ConsoleColor]::Green)
+                    }
+                } catch {
+                    Write-Step "⚠️  Failed to update git remote: $($_.Exception.Message)" ([ConsoleColor]::Yellow)
+                }
             }
         } else {
-            Write-Step "⚠️  git not found; skipped remote update for '$newPath'." ([ConsoleColor]::Yellow)
+            Write-Step "⚠️  git not found; skipped remote update for '$gitBasePath'." ([ConsoleColor]::Yellow)
         }
     }
 }
