@@ -79,6 +79,7 @@ $headers = @{
     Accept        = "application/vnd.github+json"
     "Content-Type" = "application/json"
 }
+$plainToken = $null
 
 Write-Step "Preparing to rename GitHub repository '$Owner/$OldRepoName' to '$NewRepoName'..."
 if ($DryRun) {
@@ -176,6 +177,7 @@ foreach ($dir in $targets) {
                     $newRemoteUrl = "ssh://git@github.com/$Owner/$NewRepoName.git"
                     $isGitHubRemote = $true
                 } elseif ($currentRemote -match "^https://github.com/") {
+                    $newRemoteUrl = "https://github.com/$Owner/$NewRepoName.git"
                     $isGitHubRemote = $true
                 }
             } else {
@@ -192,6 +194,7 @@ foreach ($dir in $targets) {
             } else {
                 try {
                     $gitOutput = git -C $gitBasePath remote set-url origin $newRemoteUrl 2>&1
+                    $gitOutput = $gitOutput.Trim()
                     if ($LASTEXITCODE -ne 0) {
                         Write-Step "⚠️  Failed to update git remote: $gitOutput" ([ConsoleColor]::Yellow)
                     } else {
