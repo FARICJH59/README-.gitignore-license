@@ -45,6 +45,28 @@ If you need to create a new axiomcore repository, you can use the provided scrip
 ./create-repo.ps1
 ```
 
+#### Option 3: Rename This Repository
+
+To run the default rename for this repository, run:
+
+```powershell
+./rename-repo.ps1 -Token "<YOUR_GITHUB_TOKEN>"
+```
+
+You may also set `GITHUB_TOKEN` in your environment instead of passing `-Token`.
+The script defaults to `Owner="FARIJCH59"`, `Repo="README-.gitignore-license"`, and `NewRepoName="Axiomcore-SYSTEM"`.
+These defaults match the original `FARIJCH59/README-.gitignore-license` repository; override them with your own owner/repo values when forking or reusing the script.
+
+Example override:
+
+```powershell
+./rename-repo.ps1 `
+  -Owner "<YOUR_GITHUB_USERNAME>" `
+  -Repo "<CURRENT_REPO_NAME>" `
+  -NewRepoName "<NEW_REPO_NAME>" `
+  -Token "<YOUR_GITHUB_TOKEN>"
+```
+
 **Or manually with GitHub CLI:**
 ```bash
 gh repo create TechFusion-Quantum-Global-Platform/axiomcore \
