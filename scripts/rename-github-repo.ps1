@@ -75,7 +75,7 @@ $plainToken = Convert-TokenToPlainText -SecureToken $Token
 $remoteUri = "https://api.github.com/repos/$Owner/$OldRepoName"
 $headers = @{
     Authorization = "Bearer $plainToken"
-    "User-Agent"  = "PowerShell-RepoRename/1.0 (+https://github.com/$Owner)"
+    "User-Agent"  = "PowerShell-RepoRename/1.0 ($Owner/$OldRepoName->$NewRepoName)"
     Accept        = "application/vnd.github+json"
     "Content-Type" = "application/json"
 }
@@ -178,6 +178,7 @@ foreach ($dir in $targets) {
                 }
             } else {
                 $isGitHubRemote = $false
+                Write-Step "⚠️  Unable to read current git remote for '$gitBasePath': $currentRemote" ([ConsoleColor]::Yellow)
             }
 
             if (-not $isGitHubRemote) {
