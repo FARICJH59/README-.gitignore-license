@@ -13,7 +13,7 @@ Renames a GitHub repository and optionally updates local clones.
   -DryRun
 
 .EXAMPLE
-# Example scenario: replace values to rename a repository (e.g., README-.gitignore-license -> Axiomcore-SYSTEM)
+# Example scenario: replace values to rename a repository (e.g., old-project-name -> new-project-name)
 ./scripts/rename-github-repo.ps1 `
   -Owner YourGitHubOwner `
   -Token (ConvertTo-SecureString 'YOUR_PAT' -AsPlainText -Force) `
@@ -75,7 +75,7 @@ $plainToken = Convert-TokenToPlainText -SecureToken $Token
 $remoteUri = "https://api.github.com/repos/$Owner/$OldRepoName"
 $headers = @{
     Authorization = "Bearer $plainToken"
-    "User-Agent"  = "PowerShell-RepoRename/1.0 ($Owner/$OldRepoName->$NewRepoName)"
+    "User-Agent"  = "PowerShell-RepoRename/1.0"
     Accept        = "application/vnd.github+json"
     "Content-Type" = "application/json"
 }
@@ -116,7 +116,7 @@ $gciParams = @{
 }
 
 # Use -Depth when available (PowerShell 7+) and fall back for older hosts.
-$useDepthParam = (Get-Command Get-ChildItem).Parameters.ContainsKey("Depth")
+$useDepthParam = $PSVersionTable.PSVersion.Major -ge 7
 if ($useDepthParam) {
     $gciParams["Depth"] = $MaxDepth
 }
