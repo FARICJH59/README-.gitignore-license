@@ -6,6 +6,17 @@ Renames a GitHub repository and optionally updates local clones.
 ./scripts/rename-github-repo.ps1 `
   -Owner FARICJH59 `
   -Token (ConvertTo-SecureString 'YOUR_PAT' -AsPlainText -Force) `
+  -OldRepoName old-repo-name `
+  -NewRepoName new-repo-name `
+  -LocalRoot C:\Users\User\Projects `
+  -MaxDepth 3 `
+  -DryRun
+
+.EXAMPLE
+# Rename this repository from README-.gitignore-license to Axiomcore-SYSTEM
+./scripts/rename-github-repo.ps1 `
+  -Owner FARICJH59 `
+  -Token (ConvertTo-SecureString 'YOUR_PAT' -AsPlainText -Force) `
   -OldRepoName README-.gitignore-license `
   -NewRepoName Axiomcore-SYSTEM `
   -LocalRoot C:\Users\User\Projects `
@@ -103,6 +114,7 @@ $gciParams = @{
     Recurse   = $true
 }
 
+# Use -Depth when available (PowerShell 7+) and fall back for older hosts.
 $useDepthParam = (Get-Command Get-ChildItem).Parameters.ContainsKey("Depth")
 if ($useDepthParam) {
     $gciParams["Depth"] = $MaxDepth
