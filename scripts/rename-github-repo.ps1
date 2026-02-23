@@ -54,7 +54,7 @@ function Write-Step {
     Write-Host $Message -ForegroundColor $Color
 }
 
-function Convert-TokenToPlainText {
+function ConvertFrom-SecureStringToken {
     param([SecureString]$SecureToken)
     $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureToken)
     try {
@@ -66,12 +66,13 @@ function Convert-TokenToPlainText {
     }
 }
 
+$plainToken = ConvertFrom-SecureStringToken -SecureToken $Token
+
 if ($OldRepoName -eq $NewRepoName) {
     Write-Step "Old and new repository names are identical. Nothing to do." ([ConsoleColor]::Yellow)
     return
 }
 
-$plainToken = Convert-TokenToPlainText -SecureToken $Token
 $remoteUri = "https://api.github.com/repos/$Owner/$OldRepoName"
 $headers = @{
     Authorization = "Bearer $plainToken"
@@ -167,9 +168,8 @@ foreach ($dir in $targets) {
         $newRemoteUrl = "https://github.com/$Owner/$NewRepoName.git"
         if (Get-Command git -ErrorAction SilentlyContinue) {
             $isGitHubRemote = $false
-            $currentRemote = git -C $gitBasePath remote get-url origin 2>&1
+            $currentRemote = (git -C $gitBasePath remote get-url origin 2>&1).Trim()
             if ($LASTEXITCODE -eq 0) {
-                $currentRemote = $currentRemote.Trim()
                 if ($currentRemote -match "^git@github.com:") {
                     $newRemoteUrl = "git@github.com:$Owner/$NewRepoName.git"
                     $isGitHubRemote = $true
@@ -193,8 +193,7 @@ foreach ($dir in $targets) {
                 Write-Step "DRY RUN: Would update git remote origin to $newRemoteUrl." 
             } else {
                 try {
-                    $gitOutput = git -C $gitBasePath remote set-url origin $newRemoteUrl 2>&1
-                    $gitOutput = $gitOutput.Trim()
+                    $gitOutput = (git -C $gitBasePath remote set-url origin $newRemoteUrl 2>&1).Trim()
                     if ($LASTEXITCODE -ne 0) {
                         Write-Step "⚠️  Failed to update git remote: $gitOutput" ([ConsoleColor]::Yellow)
                     } else {
