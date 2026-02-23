@@ -1,4 +1,4 @@
-# axiomcore
+# Axiomcore-SYSTEM
 
 AxiomCore MVP — backend, frontend, AI orchestration
 
@@ -27,13 +27,13 @@ This repository serves as the foundation for the AxiomCore MVP platform, providi
 Clone the repository:
 
 ```bash
-git clone https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git
-cd axiomcore
+git clone https://github.com/TechFusion-Quantum-Global-Platform/Axiomcore-SYSTEM.git
+cd Axiomcore-SYSTEM
 ```
 
 #### Option 2: Create a New Repository
 
-If you need to create a new axiomcore repository, you can use the provided scripts:
+If you need to create a new Axiomcore-SYSTEM repository, you can use the provided scripts:
 
 **Using Bash (Linux/macOS):**
 ```bash
@@ -47,7 +47,7 @@ If you need to create a new axiomcore repository, you can use the provided scrip
 
 **Or manually with GitHub CLI:**
 ```bash
-gh repo create TechFusion-Quantum-Global-Platform/axiomcore \
+gh repo create TechFusion-Quantum-Global-Platform/Axiomcore-SYSTEM \
   --private \
   --description "AxiomCore MVP — backend, frontend, AI orchestration" \
   --confirm
@@ -57,8 +57,8 @@ After creating the repository, you can initialize it with your project files:
 
 ```bash
 # Clone the empty repository
-git clone https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git
-cd axiomcore
+git clone https://github.com/TechFusion-Quantum-Global-Platform/Axiomcore-SYSTEM.git
+cd Axiomcore-SYSTEM
 
 # Copy your project files into the directory
 # Then commit and push them
