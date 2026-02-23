@@ -64,7 +64,7 @@ $plainToken = Convert-TokenToPlainText -SecureToken $Token
 $remoteUri = "https://api.github.com/repos/$Owner/$OldRepoName"
 $headers = @{
     Authorization = "token $plainToken"
-    "User-Agent"  = "axiomcore-rename-script"
+    "User-Agent"  = "Axiomcore-rename-script"
     Accept        = "application/vnd.github+json"
 }
 
@@ -142,8 +142,12 @@ foreach ($dir in $targets) {
             Write-Step "DRY RUN: Would update git remote origin to https://github.com/$Owner/$NewRepoName.git." 
         } elseif (Get-Command git -ErrorAction SilentlyContinue) {
             try {
-                git -C $newPath remote set-url origin "https://github.com/$Owner/$NewRepoName.git" | Out-Null
-                Write-Step "🔗 Updated git remote origin." ([ConsoleColor]::Green)
+                $gitOutput = git -C $newPath remote set-url origin "https://github.com/$Owner/$NewRepoName.git" 2>&1
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Step "⚠️  Failed to update git remote: $gitOutput" ([ConsoleColor]::Yellow)
+                } else {
+                    Write-Step "🔗 Updated git remote origin." ([ConsoleColor]::Green)
+                }
             } catch {
                 Write-Step "⚠️  Failed to update git remote: $($_.Exception.Message)" ([ConsoleColor]::Yellow)
             }
