@@ -13,7 +13,7 @@ Renames a GitHub repository and optionally updates local clones.
   -DryRun
 
 .EXAMPLE
-# Rename this repository from README-.gitignore-license to Axiomcore-SYSTEM
+# Example: rename README-.gitignore-license to Axiomcore-SYSTEM
 ./scripts/rename-github-repo.ps1 `
   -Owner FARICJH59 `
   -Token (ConvertTo-SecureString 'YOUR_PAT' -AsPlainText -Force) `
@@ -75,7 +75,7 @@ $plainToken = Convert-TokenToPlainText -SecureToken $Token
 $remoteUri = "https://api.github.com/repos/$Owner/$OldRepoName"
 $headers = @{
     Authorization = "Bearer $plainToken"
-    "User-Agent"  = "PowerShell-RepoRename/1.0 (+https://github.com/FARICJH59/README-.gitignore-license)"
+    "User-Agent"  = "PowerShell-RepoRename/1.0 (+https://github.com/$Owner/$OldRepoName)"
     Accept        = "application/vnd.github+json"
     "Content-Type" = "application/json"
 }
