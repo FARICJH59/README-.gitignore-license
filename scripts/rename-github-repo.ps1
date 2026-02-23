@@ -165,19 +165,20 @@ foreach ($dir in $targets) {
     if (Test-Path $gitPath) {
         $newRemoteUrl = "https://github.com/$Owner/$NewRepoName.git"
         if (Get-Command git -ErrorAction SilentlyContinue) {
-            $isGitHubRemote = $true
+            $isGitHubRemote = $false
             $currentRemote = git -C $gitBasePath remote get-url origin 2>&1
             if ($LASTEXITCODE -eq 0) {
                 $currentRemote = $currentRemote.Trim()
                 if ($currentRemote -match "^git@github.com:") {
                     $newRemoteUrl = "git@github.com:$Owner/$NewRepoName.git"
+                    $isGitHubRemote = $true
                 } elseif ($currentRemote -match "^ssh://git@github.com/") {
                     $newRemoteUrl = "ssh://git@github.com/$Owner/$NewRepoName.git"
-                } elseif (-not ($currentRemote -match "^https://github.com/")) {
-                    $isGitHubRemote = $false
+                    $isGitHubRemote = $true
+                } elseif ($currentRemote -match "^https://github.com/") {
+                    $isGitHubRemote = $true
                 }
             } else {
-                $isGitHubRemote = $false
                 Write-Step "⚠️  Unable to read current git remote for '$gitBasePath': $currentRemote" ([ConsoleColor]::Yellow)
             }
 
