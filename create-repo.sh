@@ -3,9 +3,9 @@
 
 set -e
 
-echo "Creating axiomcore repository..."
-echo "Organization: TechFusion-Quantum-Global-Platform"
-echo "Repository: axiomcore"
+echo "Creating Axiomcore-SYSTEM repository..."
+echo "Owner: FARIJCH59"
+echo "Repository: Axiomcore-SYSTEM"
 echo "Visibility: private"
 echo ""
 
@@ -24,7 +24,7 @@ if ! gh auth status &> /dev/null; then
 fi
 
 # Create the repository
-gh repo create TechFusion-Quantum-Global-Platform/axiomcore \
+gh repo create FARIJCH59/Axiomcore-SYSTEM \
   --private \
   --description "AxiomCore MVP — backend, frontend, AI orchestration" \
   --confirm
@@ -32,4 +32,4 @@ gh repo create TechFusion-Quantum-Global-Platform/axiomcore \
 echo ""
 echo "Repository created successfully!"
 echo "Clone it with:"
-echo "  git clone https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git"
+echo "  git clone https://github.com/FARIJCH59/Axiomcore-SYSTEM.git"

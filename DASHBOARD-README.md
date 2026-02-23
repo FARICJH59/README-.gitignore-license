@@ -32,8 +32,8 @@ A comprehensive PowerShell-based monitoring and orchestration system for managin
 
 1. Clone the repository:
 ```powershell
-git clone https://github.com/FARICJH59/README-.gitignore-license.git
-cd README-.gitignore-license
+git clone https://github.com/FARIJCH59/Axiomcore-SYSTEM.git
+cd Axiomcore-SYSTEM
 ```
 
 2. Set execution policy (if needed):
@@ -302,7 +302,7 @@ MIT License - See LICENSE file for details
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/FARICJH59/README-.gitignore-license/issues
+- GitHub Issues: https://github.com/FARIJCH59/Axiomcore-SYSTEM/issues
 - Documentation: This README
 
 ## Changelog

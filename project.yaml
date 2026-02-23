@@ -1,4 +1,4 @@
-name: axiomcore
+name: Axiomcore-SYSTEM
 version: 1.0.0
 description: AxiomCore MVP — backend, frontend, AI orchestration
 
@@ -6,16 +6,16 @@ metadata:
   platform: AxiomCore
   type: mvp
   license: MIT
-  organization: TechFusion-Quantum-Global-Platform
-  repository: https://github.com/FARICJH59/README-.gitignore-license
-  actualRepository: https://github.com/TechFusion-Quantum-Global-Platform/axiomcore
+  organization: FARIJCH59
+  repository: https://github.com/FARIJCH59/Axiomcore-SYSTEM
+  actualRepository: https://github.com/FARIJCH59/Axiomcore-SYSTEM
   visibility: private
   maintainers:
-    - FARICJH59
+    - FARIJCH59
     - AxiomCore Team
   contact:
     email: farichva@gmail.com
-    owner: FARICJH59
+    owner: FARIJCH59
   compliance:
     codeowners: .github/CODEOWNERS
     securityPolicy: SECURITY.md
