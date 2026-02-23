@@ -64,7 +64,7 @@ $plainToken = Convert-TokenToPlainText -SecureToken $Token
 $remoteUri = "https://api.github.com/repos/$Owner/$OldRepoName"
 $headers = @{
     Authorization = "token $plainToken"
-    "User-Agent"  = "Axiomcore-rename-script"
+    "User-Agent"  = "repo-rename-script"
     Accept        = "application/vnd.github+json"
 }
 
