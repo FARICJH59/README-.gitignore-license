@@ -13,7 +13,7 @@ Renames a GitHub repository and optionally updates local clones.
   -DryRun
 
 .EXAMPLE
-# Example scenario: replace values to rename a repository (e.g., old-project-name -> new-project-name)
+# Example scenario: replace values to rename a repository (e.g., source-repo-name -> target-repo-name)
 ./scripts/rename-github-repo.ps1 `
   -Owner YourGitHubOwner `
   -Token (ConvertTo-SecureString 'YOUR_PAT' -AsPlainText -Force) `
@@ -100,6 +100,9 @@ if (-not (Test-Path $LocalRoot)) {
 }
 
 $resolvedRoot = [IO.Path]::GetFullPath((Resolve-Path $LocalRoot).Path)
+if (-not $resolvedRoot.EndsWith([IO.Path]::DirectorySeparatorChar)) {
+    $resolvedRoot += [IO.Path]::DirectorySeparatorChar
+}
 Write-Step "Scanning '$resolvedRoot' for local clones named '$OldRepoName' (max depth: $MaxDepth)..."
 
 $targets = New-Object System.Collections.Generic.List[System.IO.DirectoryInfo]
@@ -179,8 +182,8 @@ foreach ($dir in $targets) {
                     $isGitHubRemote = $true
                 }
             } else {
-                $currentRemote = $currentRemote.Trim()
-                Write-Step "⚠️  Unable to read current git remote for '$gitBasePath': $currentRemote" ([ConsoleColor]::Yellow)
+                $errorOutput = $currentRemote.Trim()
+                Write-Step "⚠️  Unable to read current git remote for '$gitBasePath': $errorOutput" ([ConsoleColor]::Yellow)
             }
 
             if (-not $isGitHubRemote) {
