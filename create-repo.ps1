@@ -2,9 +2,9 @@
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "Creating axiomcore repository..." -ForegroundColor Cyan
-Write-Host "Organization: TechFusion-Quantum-Global-Platform"
-Write-Host "Repository: axiomcore"
+Write-Host "Creating Axiomcore-SYSTEM repository..." -ForegroundColor Cyan
+Write-Host "Owner: FARIJCH59"
+Write-Host "Repository: Axiomcore-SYSTEM"
 Write-Host "Visibility: private"
 Write-Host ""
 
@@ -25,7 +25,7 @@ try {
 }
 
 # Create the repository
-gh repo create TechFusion-Quantum-Global-Platform/axiomcore `
+gh repo create FARIJCH59/Axiomcore-SYSTEM `
   --private `
   --description "AxiomCore MVP — backend, frontend, AI orchestration" `
   --confirm
@@ -33,4 +33,4 @@ gh repo create TechFusion-Quantum-Global-Platform/axiomcore `
 Write-Host ""
 Write-Host "Repository created successfully!" -ForegroundColor Green
 Write-Host "Clone it with:"
-Write-Host "  git clone https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git" -ForegroundColor Yellow
+Write-Host "  git clone https://github.com/FARIJCH59/Axiomcore-SYSTEM.git" -ForegroundColor Yellow

@@ -39,12 +39,12 @@ Ensure you have the following installed:
 1. **Fork the repository** on GitHub
 2. **Clone your fork**:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/README-.gitignore-license.git
-   cd README-.gitignore-license
+   git clone https://github.com/YOUR_USERNAME/Axiomcore-SYSTEM.git
+   cd Axiomcore-SYSTEM
    ```
 3. **Add upstream remote**:
    ```bash
-   git remote add upstream https://github.com/FARICJH59/README-.gitignore-license.git
+   git remote add upstream https://github.com/FARIJCH59/Axiomcore-SYSTEM.git
    ```
 4. **Create a feature branch**:
    ```bash
@@ -328,9 +328,9 @@ Documentation locations:
 
 ## Contact
 
-- **Primary Maintainer**: FARICJH59
+- **Primary Maintainer**: FARIJCH59
 - **Email**: farichva@gmail.com
-- **Repository**: https://github.com/FARICJH59/README-.gitignore-license
+- **Repository**: https://github.com/FARIJCH59/Axiomcore-SYSTEM
 - **Issues**: Use GitHub Issues for bugs and feature requests
 
 ## Recognition

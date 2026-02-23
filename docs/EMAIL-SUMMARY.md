@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-Your AxiomCore repository (FARICJH59/README-.gitignore-license) has been successfully configured with enterprise-grade settings. All configurations have been verified without conflicts, and new enterprise policy files have been created.
+Your AxiomCore repository (FARIJCH59/Axiomcore-SYSTEM) has been successfully configured with enterprise-grade settings. All configurations have been verified without conflicts, and new enterprise policy files have been created.
 
 ---
 
@@ -45,7 +45,7 @@ Your AxiomCore repository (FARICJH59/README-.gitignore-license) has been success
 
 ### 👥 Code Ownership
 
-- **Default Owner**: @FARICJH59 assigned to all code sections
+- **Default Owner**: @FARIJCH59 assigned to all code sections
 - **Automatic Reviews**: GitHub automatically requests reviews from owners
 - **Clear Accountability**: Each area has defined ownership
 
@@ -107,12 +107,12 @@ These require repository admin access on GitHub:
 
 ### Security Contact
 - **Email**: farichva@gmail.com
-- **Owner**: @FARICJH59
+- **Owner**: @FARIJCH59
 - **Response Time**: 48 hours
 
 ### Repository Details
-- **Name**: README-.gitignore-license
-- **Owner**: FARICJH59
+- **Name**: Axiomcore-SYSTEM
+- **Owner**: FARIJCH59
 - **Organization**: TechFusion-Quantum-Global-Platform
 - **License**: MIT (2026)
 
@@ -181,7 +181,7 @@ These require repository admin access on GitHub:
 If you have questions or need assistance:
 
 - **Email**: farichva@gmail.com (your contact on file)
-- **Repository**: https://github.com/FARICJH59/README-.gitignore-license
+- **Repository**: https://github.com/FARIJCH59/Axiomcore-SYSTEM
 - **Documentation**: Check docs/ENTERPRISE-SETTINGS-REPORT.md
 
 All changes have been committed to the repository and are ready for your review.

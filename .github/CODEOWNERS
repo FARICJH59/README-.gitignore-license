@@ -4,37 +4,37 @@
 
 # Default owners for everything in the repo
 # These owners will be requested for review when someone opens a pull request
-*       @FARICJH59
+*       @FARIJCH59
 
 # Enterprise Configuration & Governance
-/project.yaml                           @FARICJH59
-/brain-core/                           @FARICJH59
-/.github/                              @FARICJH59
-/LICENSE                               @FARICJH59
+/project.yaml                           @FARIJCH59
+/brain-core/                           @FARIJCH59
+/.github/                              @FARIJCH59
+/LICENSE                               @FARIJCH59
 
 # Infrastructure & Deployment
-/infra/                                @FARICJH59
-/scripts/deploy-*.ps1                  @FARICJH59
-/.github/workflows/                    @FARICJH59
+/infra/                                @FARIJCH59
+/scripts/deploy-*.ps1                  @FARIJCH59
+/.github/workflows/                    @FARIJCH59
 
 # Core Scripts & Orchestration
-/scripts/axiom-*.ps1                   @FARICJH59
-/scripts/qgps-*.ps1                    @FARICJH59
-/multi-agent-dashboard.ps1             @FARICJH59
+/scripts/axiom-*.ps1                   @FARIJCH59
+/scripts/qgps-*.ps1                    @FARIJCH59
+/multi-agent-dashboard.ps1             @FARIJCH59
 
 # Documentation
-*.md                                   @FARICJH59
-/docs/                                 @FARICJH59
+*.md                                   @FARIJCH59
+/docs/                                 @FARIJCH59
 
 # API & Backend
-/api/                                  @FARICJH59
+/api/                                  @FARIJCH59
 
 # Frontend
-/frontend/                             @FARICJH59
+/frontend/                             @FARIJCH59
 
 # AI & ML Components
-/ai/                                   @FARICJH59
+/ai/                                   @FARIJCH59
 
 # Security & Compliance
-SECURITY.md                            @FARICJH59
-/brain-core/compliance/                @FARICJH59
+SECURITY.md                            @FARIJCH59
+/brain-core/compliance/                @FARIJCH59

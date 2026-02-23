@@ -4,7 +4,7 @@
 
 ### Step 1: Generate the Autopilot Repository
 ```powershell
-cd /home/runner/work/README-.gitignore-license/README-.gitignore-license
+cd /home/runner/work/Axiomcore-SYSTEM/Axiomcore-SYSTEM
 .\scripts\generate-autopilot-repo.ps1 `
     -RepoName "EnergyDashboard" `
     -RepoPath "/tmp/test-repos/EnergyDashboard" `

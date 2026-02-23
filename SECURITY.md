@@ -102,7 +102,7 @@ As defined in `/brain-core/compliance/infra-policy.json`:
 
 **Primary Contact**: farichva@gmail.com  
 **Organization**: TechFusion-Quantum-Global-Platform  
-**Repository**: https://github.com/FARICJH59/README-.gitignore-license
+**Repository**: https://github.com/FARIJCH59/Axiomcore-SYSTEM
 
 ## Vulnerability Disclosure Policy
 
@@ -141,4 +141,4 @@ Thank you for helping keep AxiomCore secure!
 
 **Last Updated**: 2026-02-19  
 **Version**: 1.0  
-**Policy Owner**: FARICJH59
+**Policy Owner**: FARIJCH59
