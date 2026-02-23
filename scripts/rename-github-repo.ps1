@@ -75,8 +75,9 @@ $plainToken = Convert-TokenToPlainText -SecureToken $Token
 $remoteUri = "https://api.github.com/repos/$Owner/$OldRepoName"
 $headers = @{
     Authorization = "Bearer $plainToken"
-    "User-Agent"  = "repo-rename-script"
+    "User-Agent"  = "PowerShell-RepoRename/1.0 (+https://github.com/FARICJH59/README-.gitignore-license)"
     Accept        = "application/vnd.github+json"
+    "Content-Type" = "application/json"
 }
 
 Write-Step "Preparing to rename GitHub repository '$Owner/$OldRepoName' to '$NewRepoName'..."
@@ -99,14 +100,8 @@ if (-not (Test-Path $LocalRoot)) {
     return
 }
 
-$resolvedRoot = (Resolve-Path $LocalRoot).Path
+$resolvedRoot = [IO.Path]::GetFullPath((Resolve-Path $LocalRoot).Path)
 Write-Step "Scanning '$resolvedRoot' for local clones named '$OldRepoName' (max depth: $MaxDepth)..."
-
-$pathSeparators = @([IO.Path]::DirectorySeparatorChar)
-if ([IO.Path]::AltDirectorySeparatorChar -and [IO.Path]::AltDirectorySeparatorChar -ne $pathSeparators[0]) {
-    $pathSeparators += [IO.Path]::AltDirectorySeparatorChar
-}
-$separatorPattern = ($pathSeparators | ForEach-Object { [Regex]::Escape($_) }) -join "|"
 
 $targets = New-Object System.Collections.Generic.List[System.IO.DirectoryInfo]
 $rootItem = Get-Item $resolvedRoot
@@ -132,9 +127,9 @@ if ($useDepthParam) {
     $directories | Where-Object { $_.Name -eq $OldRepoName } | ForEach-Object { $targets.Add($_) }
 } else {
     $directories | ForEach-Object {
-        $relative = $_.FullName.Substring($resolvedRoot.Length).TrimStart($pathSeparators)
-        $depth = if ($relative) { ($relative -split $separatorPattern).Length } else { 0 }
-        if ($depth -le $MaxDepth -and $_.Name -eq $OldRepoName) {
+        $relativePath = [IO.Path]::GetFullPath($_.FullName).Substring($resolvedRoot.Length)
+        $segments = $relativePath.Split([IO.Path]::DirectorySeparatorChar, [System.StringSplitOptions]::RemoveEmptyEntries)
+        if ($segments.Length -le $MaxDepth -and $_.Name -eq $OldRepoName) {
             $targets.Add($_)
         }
     }
@@ -165,6 +160,7 @@ foreach ($dir in $targets) {
     if (Test-Path $gitPath) {
         $newRemoteUrl = "https://github.com/$Owner/$NewRepoName.git"
         if (Get-Command git -ErrorAction SilentlyContinue) {
+            $isGitHubRemote = $true
             $currentRemote = git -C $gitBasePath remote get-url origin 2>&1
             if ($LASTEXITCODE -eq 0) {
                 $currentRemote = $currentRemote.Trim()
@@ -172,7 +168,16 @@ foreach ($dir in $targets) {
                     $newRemoteUrl = "git@github.com:$Owner/$NewRepoName.git"
                 } elseif ($currentRemote -match "^ssh://git@github.com/") {
                     $newRemoteUrl = "ssh://git@github.com/$Owner/$NewRepoName.git"
+                } elseif (-not ($currentRemote -match "^https://github.com/")) {
+                    $isGitHubRemote = $false
                 }
+            } else {
+                $isGitHubRemote = $false
+            }
+
+            if (-not $isGitHubRemote) {
+                Write-Step "⚠️  Remote origin is not a GitHub URL. Skipping remote update for '$gitBasePath'." ([ConsoleColor]::Yellow)
+                continue
             }
 
             if ($DryRun) {
