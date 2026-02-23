@@ -4,7 +4,7 @@ Renames a GitHub repository and optionally updates local clones.
 
 .EXAMPLE
 ./scripts/rename-github-repo.ps1 `
-  -Owner FARICJH59 `
+  -Owner YourGitHubOwner `
   -Token (ConvertTo-SecureString 'YOUR_PAT' -AsPlainText -Force) `
   -OldRepoName old-repo-name `
   -NewRepoName new-repo-name `
@@ -102,6 +102,12 @@ if (-not (Test-Path $LocalRoot)) {
 $resolvedRoot = (Resolve-Path $LocalRoot).Path
 Write-Step "Scanning '$resolvedRoot' for local clones named '$OldRepoName' (max depth: $MaxDepth)..."
 
+$pathSeparators = @([IO.Path]::DirectorySeparatorChar)
+if ([IO.Path]::AltDirectorySeparatorChar -and [IO.Path]::AltDirectorySeparatorChar -ne $pathSeparators[0]) {
+    $pathSeparators += [IO.Path]::AltDirectorySeparatorChar
+}
+$separatorPattern = ($pathSeparators | ForEach-Object { [Regex]::Escape($_) }) -join "|"
+
 $targets = New-Object System.Collections.Generic.List[System.IO.DirectoryInfo]
 $rootItem = Get-Item $resolvedRoot
 if ($rootItem.PSIsContainer -and $rootItem.Name -eq $OldRepoName) {
@@ -126,8 +132,8 @@ if ($useDepthParam) {
     $directories | Where-Object { $_.Name -eq $OldRepoName } | ForEach-Object { $targets.Add($_) }
 } else {
     $directories | ForEach-Object {
-        $relative = $_.FullName.Substring($resolvedRoot.Length).TrimStart('\','/')
-        $depth = if ($relative) { ($relative -split '[\\/]').Length } else { 0 }
+        $relative = $_.FullName.Substring($resolvedRoot.Length).TrimStart($pathSeparators)
+        $depth = if ($relative) { ($relative -split $separatorPattern).Length } else { 0 }
         if ($depth -le $MaxDepth -and $_.Name -eq $OldRepoName) {
             $targets.Add($_)
         }
