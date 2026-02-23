@@ -66,8 +66,6 @@ function ConvertFrom-SecureStringToken {
     }
 }
 
-$plainToken = ConvertFrom-SecureStringToken -SecureToken $Token
-
 if ($OldRepoName -eq $NewRepoName) {
     Write-Step "Old and new repository names are identical. Nothing to do." ([ConsoleColor]::Yellow)
     return
@@ -75,12 +73,11 @@ if ($OldRepoName -eq $NewRepoName) {
 
 $remoteUri = "https://api.github.com/repos/$Owner/$OldRepoName"
 $headers = @{
-    Authorization = "Bearer $plainToken"
+    Authorization = "Bearer $(ConvertFrom-SecureStringToken -SecureToken $Token)"
     "User-Agent"  = "PowerShell-RepoRename/1.0"
     Accept        = "application/vnd.github+json"
     "Content-Type" = "application/json"
 }
-$plainToken = $null
 
 Write-Step "Preparing to rename GitHub repository '$Owner/$OldRepoName' to '$NewRepoName'..."
 if ($DryRun) {
@@ -107,7 +104,7 @@ Write-Step "Scanning '$resolvedRoot' for local clones named '$OldRepoName' (max 
 
 $targets = New-Object System.Collections.Generic.List[System.IO.DirectoryInfo]
 $rootItem = Get-Item $resolvedRoot
-if ($rootItem.PSIsContainer -and $rootItem.Name -eq $OldRepoName) {
+if (($rootItem -is [System.IO.DirectoryInfo]) -and $rootItem.Name -eq $OldRepoName) {
     $targets.Add($rootItem)
 }
 
@@ -168,8 +165,9 @@ foreach ($dir in $targets) {
         $newRemoteUrl = "https://github.com/$Owner/$NewRepoName.git"
         if (Get-Command git -ErrorAction SilentlyContinue) {
             $isGitHubRemote = $false
-            $currentRemote = (git -C $gitBasePath remote get-url origin 2>&1).Trim()
+            $currentRemote = git -C $gitBasePath remote get-url origin 2>&1
             if ($LASTEXITCODE -eq 0) {
+                $currentRemote = $currentRemote.Trim()
                 if ($currentRemote -match "^git@github.com:") {
                     $newRemoteUrl = "git@github.com:$Owner/$NewRepoName.git"
                     $isGitHubRemote = $true
@@ -181,6 +179,7 @@ foreach ($dir in $targets) {
                     $isGitHubRemote = $true
                 }
             } else {
+                $currentRemote = $currentRemote.Trim()
                 Write-Step "⚠️  Unable to read current git remote for '$gitBasePath': $currentRemote" ([ConsoleColor]::Yellow)
             }
 
@@ -193,8 +192,9 @@ foreach ($dir in $targets) {
                 Write-Step "DRY RUN: Would update git remote origin to $newRemoteUrl." 
             } else {
                 try {
-                    $gitOutput = (git -C $gitBasePath remote set-url origin $newRemoteUrl 2>&1).Trim()
+                    $gitOutput = git -C $gitBasePath remote set-url origin $newRemoteUrl 2>&1
                     if ($LASTEXITCODE -ne 0) {
+                        $gitOutput = $gitOutput.Trim()
                         Write-Step "⚠️  Failed to update git remote: $gitOutput" ([ConsoleColor]::Yellow)
                     } else {
                         Write-Step "🔗 Updated git remote origin." ([ConsoleColor]::Green)
