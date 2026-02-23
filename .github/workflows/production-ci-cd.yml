@@ -17,8 +17,7 @@ jobs:
     name: branch-governance
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      administration: write
+      contents: write
     steps:
       - name: Enforce main branch governance
         uses: actions/github-script@v7
@@ -50,8 +49,7 @@ jobs:
                 restrictions: null,
                 required_linear_history: true,
                 allow_force_pushes: false,
-                allow_deletions: false,
-                block_creations: false
+                allow_deletions: false
               });
               core.info(`✅ Branch protection enforced for ${branch}`);
             } catch (error) {
@@ -93,13 +91,14 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd "${{ steps.pkg-dir.outputs.dir }}"
-          npm ci || npm install
+          npm ci
       - name: Run ESLint
         run: |
           mkdir -p artifacts
           cd "${{ steps.pkg-dir.outputs.dir }}"
           log_path="${GITHUB_WORKSPACE}/artifacts/lint-js.log"
-          npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0 | tee "$log_path"
+          set -o pipefail
+          npx eslint '**/*.{js,jsx,ts,tsx}' --max-warnings=0 --ignore-pattern node_modules --ignore-pattern dist --ignore-pattern build --ignore-pattern coverage | tee "$log_path"
       - name: Upload lint-js results
         uses: actions/upload-artifact@v4
         if: always()
@@ -122,7 +121,11 @@ jobs:
       - name: Detect Python sources
         id: pyfiles
         run: |
-          files=$(find api -type f -name "*.py" || true)
+          if [ -d api ]; then
+            files=$(find api -type f -name "*.py")
+          else
+            files=""
+          fi
           if [ -z "$files" ]; then
             echo "found=false" >> "$GITHUB_OUTPUT"
             echo "No Python files found under api/. Skipping lint."
@@ -139,12 +142,14 @@ jobs:
         if: steps.pyfiles.outputs.found == 'true'
         run: |
           mkdir -p artifacts
-          pylint $(cat python_files.txt) | tee artifacts/lint-python.log
+          set -o pipefail
+          cat python_files.txt | xargs pylint | tee artifacts/lint-python.log
       - name: Run black (check)
         if: steps.pyfiles.outputs.found == 'true'
         run: |
           mkdir -p artifacts
-          black --check $(cat python_files.txt) | tee -a artifacts/lint-python.log
+          set -o pipefail
+          cat python_files.txt | xargs black --check | tee -a artifacts/lint-python.log
       - name: Upload lint-python results
         uses: actions/upload-artifact@v4
         if: always()
@@ -169,7 +174,15 @@ jobs:
         shell: pwsh
         run: |
           mkdir -p artifacts
-          Invoke-ScriptAnalyzer -Path scripts -Recurse -Severity Error,Warning | Tee-Object -FilePath artifacts/lint-powershell.log
+          if (-not (Test-Path "scripts")) {
+            Write-Error "scripts directory not found"
+            exit 1
+          }
+          $results = Invoke-ScriptAnalyzer -Path scripts -Recurse -Severity Error,Warning
+          $results | Tee-Object -FilePath artifacts/lint-powershell.log
+          if ($results -and $results.Count -gt 0) {
+            throw "ScriptAnalyzer found $($results.Count) issue(s)"
+          }
       - name: Upload lint-powershell results
         uses: actions/upload-artifact@v4
         if: always()
@@ -192,20 +205,36 @@ jobs:
       - name: Run axiom-compliance (infra, security, versions)
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           mkdir -p artifacts
           & "${{ github.workspace }}/scripts/axiom-compliance.ps1" -RepoPath "${{ github.workspace }}" 2>&1 | Tee-Object -FilePath artifacts/compliance.log
-          $lockPath = Join-Path "${{ github.workspace }}" "package-lock.json"
+          $packageDir = "${{ github.workspace }}"
+          if (-not (Test-Path (Join-Path $packageDir "package.json")) -and (Test-Path (Join-Path $packageDir "frontend/package.json"))) {
+            $packageDir = Join-Path $packageDir "frontend"
+          }
+          $lockPath = Join-Path $packageDir "package-lock.json"
           if (Test-Path $lockPath) {
             $lock = Get-Content $lockPath -Raw | ConvertFrom-Json
             $prerelease = @()
+            $prePattern = '(?i)-(alpha|beta|rc|preview|canary|next|dev|snapshot|pre|prerelease)(?:[.\d]*)'
             if ($lock.dependencies) {
               foreach ($key in $lock.dependencies.Keys) {
                 $version = $lock.dependencies[$key].version
-                if ($version -match "-") { $prerelease += "$key@$version" }
+                if ($null -ne $version -and $version -match $prePattern) { $prerelease += "$key@$version" }
+              }
+            }
+            if ($lock.packages) {
+              foreach ($pkg in $lock.packages.GetEnumerator()) {
+                # Skip root package entry (empty key in lockfile v2+)
+                if ([string]::IsNullOrWhiteSpace($pkg.Key)) { continue }
+                $version = $pkg.Value.version
+                if ($null -eq $version) { continue }
+                if ($version -match $prePattern) { $prerelease += "$($pkg.Key)@$version" }
               }
             }
             if ($prerelease.Count -gt 0) {
               Write-Error "Pre-release dependencies are not allowed in production: $($prerelease -join ', ')"
+              exit 1
             }
           }
       - name: Upload compliance artifacts
@@ -253,14 +282,18 @@ jobs:
           if [ ! -f package-lock.json ]; then
             npm install --package-lock-only
           fi
-          npm ci || npm install
+          npm ci
       - name: Build frontend
         run: |
           cd "${{ steps.build-pkg-dir.outputs.dir }}"
           npm run build --if-present
       - name: Build backend (Python byte-compile)
         run: |
-          python -m compileall api || true
+          if [ -d api ]; then
+            python -m compileall api
+          else
+            echo "api directory not found; skipping backend byte-compilation."
+          fi
 
   test:
     name: test
@@ -296,18 +329,22 @@ jobs:
           if [ ! -f package-lock.json ]; then
             npm install --package-lock-only
           fi
-          npm ci || npm install
+          npm ci
       - name: Run frontend tests
         run: |
           cd "${{ steps.test-pkg-dir.outputs.dir }}"
           npm test -- --watch=false --ci --passWithNoTests
       - name: Run backend tests
         run: |
-          if find api -type f -name \"test_*.py\" -o -name \"*_test.py\" | grep -q .; then
-            pip install pytest
-            pytest
+          if [ -d api ]; then
+            if find api -type f \( -name "test_*.py" -o -name "*_test.py" \) | grep -q .; then
+              pip install pytest
+              pytest
+            else
+              echo "No pytest suites found under api/. Skipping backend tests."
+            fi
           else
-            echo \"No pytest suites found under api/. Skipping backend tests.\"
+            echo "api directory not found; skipping backend tests."
           fi
 
   copilot-review:
@@ -317,7 +354,6 @@ jobs:
       - lint-js
       - lint-python
       - lint-powershell
-    if: github.event_name == 'pull_request' || github.event_name == 'push'
     permissions:
       contents: read
       pull-requests: write
