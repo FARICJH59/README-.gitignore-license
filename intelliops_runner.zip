@@ -1,1 +1,3 @@
-Placeholder archive for agent runner
+This is a placeholder for the IntelliOps agent runner artifact.
+NOTE: This is NOT a valid ZIP archive. It exists only so the expected path is present.
+The real runner archive should replace this file during CI/build.

@@ -24,7 +24,7 @@ def setup_environment():
 
 def launch_project():
     print("Launching backend (FastAPI on http://localhost:8000)...")
-    backend_proc = subprocess.Popen([sys.executable, "server.py"])
+    backend_proc = subprocess.Popen([sys.executable, str(ROOT / "server.py")])
     print(f"Backend PID: {backend_proc.pid}")
 
     frontend_dir = ROOT / "frontend"
