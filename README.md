@@ -2,6 +2,43 @@
 
 AxiomCore MVP — backend, frontend, AI orchestration
 
+## Agentic Fullstack Platform scaffold
+
+This repository now includes a minimal React + FastAPI starter so you can iterate quickly on the Agentic Fullstack Platform.
+
+### Project structure
+- `frontend/` — React 18 + Vite + TailwindCSS  
+  - `pages/index.jsx` — sample landing page that pings the backend (with `index.js` wrapper)  
+  - `styles/globals.css` — Tailwind base + global styles  
+  - `tailwind.config.js`, `postcss.config.js`, `vite.config.js` — frontend tooling config
+- `server.py` — FastAPI app with sample `/api/hello` endpoint (CORS enabled)
+- `main.py` — placeholder for backend orchestration logic
+- `intelliops_cli_runner.py` and `intelliops_runner.zip` — placeholders for agent runtime
+- `install_and_launch.py` — installs deps and launches backend + frontend
+- PowerShell automation: `start-all.ps1`, `setup-fullstack.ps1`, `setup-axiomcore-fullstack.ps1`, `launch_all.ps1`, `push_to_github.ps1`
+
+### Run locally
+1) Backend
+```bash
+python -m venv .venv && source .venv/bin/activate  # optional
+pip install -r requirements.txt
+python server.py
+```
+
+2) Frontend (in a second terminal)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Vite proxies `/api/*` requests to `http://localhost:8000` so the sample page can reach the FastAPI endpoint.
+
+### Extend
+- Add new backend routes in `server.py` and share logic in `main.py`.
+- Add agent routines in `intelliops_cli_runner.py`.
+- Build UI components under `frontend/pages` or `frontend/src` and style with Tailwind.
+- Use the provided PowerShell scripts to automate setup and local launches.
+
 ## Description
 
 This repository serves as the foundation for the AxiomCore MVP platform, providing backend services, frontend interfaces, and AI orchestration capabilities. The project is a comprehensive full-stack solution supporting both PowerShell and Python development environments.
