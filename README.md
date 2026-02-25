@@ -102,6 +102,50 @@ This repository serves as the foundation for the AxiomCore MVP platform, providi
 - Python application development
 - Cross-platform compatibility
 
+## What Types of Projects Can You Build?
+
+AxiomCore is a versatile platform that supports building various types of modern applications:
+
+### 🌐 Full-Stack Web Applications
+- **SaaS platforms** - Multi-tenant applications with authentication
+- **Admin dashboards** - React/Next.js frontends with FastAPI backends
+- **E-commerce sites** - Complete online stores with payment integration
+- **Content management systems** - Custom CMS solutions
+
+### 🤖 ML/AI Projects
+- **Predictive analytics** - Using TensorFlow, PyTorch, or ONNX
+- **Computer vision** - Image recognition and processing
+- **NLP applications** - Natural language understanding and generation
+- **Recommendation systems** - Personalized content delivery
+
+### 📡 IoT Edge Systems
+- **Industrial automation** - Manufacturing and process control
+- **Smart building management** - HVAC, lighting, security systems
+- **Fleet tracking** - GPS and telemetry data processing
+- **Environmental monitoring** - Sensor data collection and analysis
+
+### 🔧 DevOps Automation
+- **Multi-repo orchestration** - Manage multiple projects simultaneously
+- **CI/CD pipelines** - Automated testing and deployment
+- **Infrastructure automation** - Terraform and cloud provisioning
+- **Self-healing systems** - Automated compliance and recovery
+
+### 💼 Enterprise Systems
+- **Fintech applications** - Payment processing, trading platforms
+- **Microservices architecture** - Distributed, scalable services
+- **Data engineering platforms** - ETL pipelines, analytics dashboards
+- **Business intelligence** - Real-time reporting and insights
+
+### 📊 Supported Technology Stack
+
+**Frontend:** React 18, Next.js 14, Vite, TailwindCSS  
+**Backend:** Python 3.10+, FastAPI, Node.js 18+, Express  
+**AI/ML:** TensorFlow, PyTorch, ONNX  
+**Infrastructure:** Docker 24+, Kubernetes 1.28+, Terraform  
+**Cloud:** AWS, GCP, Azure, NVIDIA Cloud
+
+📖 **[See Complete Project Types Documentation →](PROJECT-TYPES.md)**
+
 ## Getting Started
 
 ### Prerequisites
