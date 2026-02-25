@@ -33,6 +33,37 @@ npm run dev
 ```
 Vite proxies `/api/*` requests to `http://localhost:8000` so the sample page can reach the FastAPI endpoint.
 
+### Testing
+The project includes a comprehensive test suite with pytest. You can run tests in multiple ways:
+
+```bash
+# Run all tests
+python run_tests.py
+
+# Dry run - see what tests would be run without executing them
+python run_tests.py --dry-run
+
+# Run only unit tests
+python run_tests.py -m unit
+
+# Run with coverage report
+python run_tests.py --cov
+
+# Run unit tests in dry mode
+python run_tests.py --dry-run -m unit
+
+# Direct pytest usage
+pytest                    # Run all tests
+pytest --collect-only     # Dry run (collect only)
+pytest -m unit            # Run unit tests only
+pytest -m integration     # Run integration tests only
+```
+
+Available test markers:
+- `unit` - Unit tests
+- `integration` - Integration tests
+- `slow` - Slow running tests
+
 ### Extend
 - Add new backend routes in `server.py` and share logic in `main.py`.
 - Add agent routines in `intelliops_cli_runner.py`.
