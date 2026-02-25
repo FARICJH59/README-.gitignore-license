@@ -36,6 +36,7 @@ Vite proxies `/api/*` requests to `http://localhost:8000` so the sample page can
 ### Testing
 The project includes a comprehensive test suite with pytest. You can run tests in multiple ways:
 
+**Using Python script:**
 ```bash
 # Run all tests
 python run_tests.py
@@ -51,8 +52,28 @@ python run_tests.py --cov
 
 # Run unit tests in dry mode
 python run_tests.py --dry-run -m unit
+```
 
-# Direct pytest usage
+**Using PowerShell script:**
+```powershell
+# Run all tests
+.\run_tests.ps1
+
+# Dry run - see what tests would be run without executing them
+.\run_tests.ps1 -DryRun
+
+# Run only unit tests
+.\run_tests.ps1 -Marker unit
+
+# Run with coverage report
+.\run_tests.ps1 -Coverage
+
+# Run unit tests in dry mode
+.\run_tests.ps1 -DryRun -Marker unit
+```
+
+**Direct pytest usage:**
+```bash
 pytest                    # Run all tests
 pytest --collect-only     # Dry run (collect only)
 pytest -m unit            # Run unit tests only
