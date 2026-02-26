@@ -92,5 +92,13 @@ jobs:
           persist-credentials: false
           ref: ${{ github.event.pull_request && github.event.pull_request.head.sha || github.sha }}
           repository: ${{ github.event.pull_request && github.event.pull_request.head.repo.full_name || github.repository }}
-      - name: Compliance placeholder
-        run: echo "Compliance check passed"
+      - name: Run Brain Sync
+        shell: pwsh
+        run: |
+          $RepoPath = "${{ github.workspace }}"
+          ./scripts/axiom-sync.ps1 -RepoPath $RepoPath
+      - name: Run Compliance Check
+        shell: pwsh
+        run: |
+          $RepoPath = "${{ github.workspace }}"
+          ./scripts/axiom-compliance.ps1 -RepoPath $RepoPath

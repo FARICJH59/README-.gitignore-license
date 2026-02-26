@@ -12,18 +12,38 @@ jobs:
         repo: [axiomcore, rugged-silo, veo3]
     
     steps:
-      - name: Checkout repository
+      - name: Checkout main repository (axiomcore)
+        uses: actions/checkout@v3
+      
+      - name: Checkout target repository
         uses: actions/checkout@v3
         with:
+          repository: TechFusion-Quantum-Global-Platform/${{ matrix.repo }}
           path: ${{ matrix.repo }}
+        continue-on-error: true
+      
+      - name: Check if target repo was cloned
+        id: check-repo
+        shell: pwsh
+        run: |
+          $targetPath = "${{ github.workspace }}/${{ matrix.repo }}"
+          if (Test-Path $targetPath) {
+            Write-Host "Target repository found at: $targetPath"
+            "repo_exists=true" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "Target repository not found, skipping sync/compliance for ${{ matrix.repo }}"
+            "repo_exists=false" >> $env:GITHUB_OUTPUT
+          }
       
       - name: Brain Sync
+        if: steps.check-repo.outputs.repo_exists == 'true'
         shell: pwsh
         run: |
           $RootPath = "${{ github.workspace }}"
           & "$RootPath\scripts\axiom-sync.ps1" -RepoPath "${{ github.workspace }}/${{ matrix.repo }}"
       
       - name: Compliance Check
+        if: steps.check-repo.outputs.repo_exists == 'true'
         shell: pwsh
         run: |
           $RootPath = "${{ github.workspace }}"
@@ -38,7 +58,7 @@ jobs:
       
       - name: Upload Compliance Logs
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.check-repo.outputs.repo_exists == 'true'
         with:
           name: compliance-logs-${{ matrix.repo }}
           path: ${{ github.workspace }}/${{ matrix.repo }}/.brain/compliance-log.json
@@ -46,7 +66,7 @@ jobs:
       
       - name: Upload Sync Metadata
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.check-repo.outputs.repo_exists == 'true'
         with:
           name: sync-metadata-${{ matrix.repo }}
           path: ${{ github.workspace }}/${{ matrix.repo }}/.brain/sync-metadata.json
