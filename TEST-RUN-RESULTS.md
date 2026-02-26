@@ -8,6 +8,15 @@
 
 Successfully completed a full test run of the AxiomCore simulated project, including backend (FastAPI) and frontend (React + Vite) components.
 
+## Project Type
+
+This is a **Full-Stack Web Application** with the following technology stack:
+
+- **Backend:** FastAPI (Python-based REST API framework)
+- **Frontend:** React 18 with Vite build tool and TailwindCSS for styling
+- **Integration:** Vite development proxy for seamless frontend-backend communication
+- **Architecture:** Modern client-server architecture with RESTful API design
+
 ## Environment
 
 - **Python Version:** 3.12.3
