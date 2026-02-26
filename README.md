@@ -49,6 +49,7 @@ This repository serves as the foundation for the AxiomCore MVP platform, providi
 - PowerShell scripting support
 - Python application development
 - Cross-platform compatibility
+- **GitHub Codespaces support** for cloud-based development
 
 ## Getting Started
 
@@ -57,9 +58,21 @@ This repository serves as the foundation for the AxiomCore MVP platform, providi
 - PowerShell 7.0 or higher
 - Python 3.8 or higher
 
+**OR** use **GitHub Codespaces** for instant cloud-based development without local setup! [Learn more about Codespaces integration](CODESPACES.md)
+
 ### Installation
 
-#### Option 1: Clone the Repository
+#### Option 1: GitHub Codespaces (Recommended for Quick Start)
+
+Open this repository directly in GitHub Codespaces for instant cloud-based development:
+
+1. Click the **"Code"** button on the GitHub repository page
+2. Select the **"Codespaces"** tab
+3. Click **"Create codespace on main"**
+
+All prerequisites and tools will be automatically configured. See [CODESPACES.md](CODESPACES.md) for detailed information.
+
+#### Option 2: Clone the Repository
 
 Clone the repository:
 
@@ -68,7 +81,7 @@ git clone https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git
 cd axiomcore
 ```
 
-#### Option 2: Create a New Repository
+#### Option 3: Create a New Repository
 
 If you need to create a new axiomcore repository, you can use the provided scripts:
 
@@ -180,6 +193,35 @@ Before using the cockpit, ensure:
 3. npm is installed and available in PATH
 4. Brain core is initialized with `brain-core/repo-registry.json`
 5. For cross-platform usage, PowerShell Core 7+ is recommended
+
+## GitHub Codespaces Integration
+
+### How This Repository Relates to Your Codespaces
+
+This repository is **fully integrated with GitHub Codespaces**, providing a cloud-based development environment that eliminates local setup requirements. When you ask "How is this repo related to my code Spaces?", here's the relationship:
+
+- **This Repository** = Your AxiomCore platform codebase, scripts, and configurations
+- **GitHub Codespaces** = The cloud-based development environment where you can work on this repository
+- **Together** = A complete cloud development solution with zero local configuration
+
+### Quick Start with Codespaces
+
+1. **Open in Codespaces**: Click "Code" → "Codespaces" → "Create codespace"
+2. **Automatic Setup**: PowerShell, Python, Node.js, and all tools are pre-configured
+3. **Start Developing**: Run scripts, start servers, and develop immediately
+
+### Benefits
+
+- ✅ **No Local Setup**: Skip installing PowerShell, Python, Node.js, Docker, etc.
+- ✅ **Consistent Environment**: Same setup for all team members
+- ✅ **Work Anywhere**: Access from any device with a browser
+- ✅ **Pre-configured Tools**: VS Code extensions and settings ready to go
+- ✅ **Port Forwarding**: Automatic access to running services (API, frontend, etc.)
+- ✅ **QGPS Cockpit**: Full support for multi-repository management in the cloud
+
+### Learn More
+
+For comprehensive information about using this repository with GitHub Codespaces, see [CODESPACES.md](CODESPACES.md).
 
 ## License
 
