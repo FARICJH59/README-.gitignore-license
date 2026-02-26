@@ -1,4 +1,4 @@
-name: axiomcore
+name: Axiomcore-SYSTEM
 version: 1.0.0
 description: AxiomCore MVP — backend, frontend, AI orchestration
 
@@ -8,7 +8,7 @@ metadata:
   license: MIT
   organization: TechFusion-Quantum-Global-Platform
   repository: https://github.com/FARICJH59/README-.gitignore-license
-  actualRepository: https://github.com/TechFusion-Quantum-Global-Platform/axiomcore
+  actualRepository: https://github.com/TechFusion-Quantum-Global-Platform/Axiomcore-SYSTEM
   visibility: private
   maintainers:
     - FARICJH59

@@ -1,7 +1,7 @@
 [
   {
-    "name": "axiomcore",
-    "repo": "https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git",
+    "name": "Axiomcore-SYSTEM",
+    "repo": "https://github.com/TechFusion-Quantum-Global-Platform/Axiomcore-SYSTEM.git",
     "frontend": {
       "path": "frontend",
       "port": 3000
