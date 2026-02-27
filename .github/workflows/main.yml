@@ -1,45 +1,190 @@
-name: Deploy AxiomCore Full-Stack
+name: AxiomCore Full CI/CD
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch: # allows manual triggering
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: 20
+  PYTHON_VERSION: 3.12
+  DOCKER_IMAGE_NAME: axiomcore/autonomous
+  MULTI_ARCH: linux/amd64,linux/arm64
+  CLOUD_TARGETS: cloudflare,aws,gcp,azure
+  DRY_RUN: true
+  COCKPIT_DIR: axiomcore-cockpit
 
 jobs:
-  deploy:
-    runs-on: windows-latest
-    env:
-      NODE_ENV: production
 
+  workflow-drift-selfheal:
+    name: Workflow Drift Self-Heal
+    runs-on: ubuntu-latest
+    outputs:
+      drift-status: ${{ steps.drift-status.outputs.status }}
     steps:
-      # 1️⃣ Checkout repository
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: actions/checkout@v4
 
-      # 2️⃣ Install Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '22.x'
-
-      # 3️⃣ Install Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      # 4️⃣ Install Docker
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
+      - name: Install Dependencies
+        run: pip install pyyaml
 
-      # 5️⃣ Run the full-stack deployment script
-      - name: Run deploy-axiomcore-fullstack.ps1
-        shell: pwsh
+      - name: Run Drift Detection
+        id: drift-status
         run: |
-          Set-StrictMode -Version Latest
-          .\scripts\deploy-axiomcore-fullstack.ps1
+          python scripts/check_workflow_drift_selfheal.py \
+            --workflow .github/workflows/axiomcore-deploy.yml \
+            --mermaid ${COCKPIT_DIR}/mermaid/cognitive_map.mmd \
+            --output .github/workflows/axiomcore-deploy.selfheal.yml
+          if [ -f ".github/workflows/axiomcore-deploy.selfheal.yml" ]; then
+            echo "status=self-healed" >> $GITHUB_OUTPUT
+          else
+            echo "status=drift-detected" >> $GITHUB_OUTPUT
+          fi
 
-      # 6️⃣ Optional: Post-deploy status
-      - name: Deployment completed
-        run: Write-Host "✅ Full-stack deployment completed successfully!"
+  setup-environment:
+    name: Cross-Platform Environment Setup
+    needs: workflow-drift-selfheal
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Install jq
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then choco install jq; else sudo apt-get install -y jq; fi
+
+  build-and-test:
+    name: Build & Test
+    needs: setup-environment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Node & Python Dependencies
+        run: |
+          npm ci
+          pip install -r requirements.txt
+      - name: Run Backend Tests
+        run: pytest tests/
+      - name: MCP Validation
+        run: echo "MCP Validation placeholder (non-blocking)"
+
+  docker-build-push:
+    name: Docker Multi-Arch Build & Push
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to Docker
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: Build & Push
+        run: |
+          docker buildx create --use --name axiomcore-builder || true
+          if [ "${{ env.DRY_RUN }}" = "true" ]; then
+            docker buildx build --platform ${{ env.MULTI_ARCH }} --load -t ${{ env.DOCKER_IMAGE_NAME }} .
+          else
+            docker buildx build --platform ${{ env.MULTI_ARCH }} --push -t ${{ env.DOCKER_IMAGE_NAME }} .
+          fi
+
+  deploy-cloudflare:
+    name: Deploy to Cloudflare
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: contains(env.CLOUD_TARGETS, 'cloudflare')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cloudflare Deployment
+        uses: cloudflare/wrangler-action@v2
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          environment: production
+          dryRun: ${{ env.DRY_RUN }}
+
+  deploy-aws:
+    name: Deploy to AWS
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: contains(env.CLOUD_TARGETS, 'aws')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Deploy (Dry-Run Support)
+        run: |
+          if [ "${{ env.DRY_RUN }}" = "true" ]; then echo "AWS dry-run"; else echo "Deploy AWS..."; fi
+
+  deploy-gcp:
+    name: Deploy to GCP
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: contains(env.CLOUD_TARGETS, 'gcp')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/setup-gcloud@v1
+        with:
+          service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      - name: Deploy (Dry-Run Support)
+        run: |
+          if [ "${{ env.DRY_RUN }}" = "true" ]; then echo "GCP dry-run"; else echo "Deploy GCP..."; fi
+
+  deploy-azure:
+    name: Deploy to Azure
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: contains(env.CLOUD_TARGETS, 'azure')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Deploy (Dry-Run Support)
+        run: |
+          if [ "${{ env.DRY_RUN }}" = "true" ]; then echo "Azure dry-run"; else echo "Deploy Azure..."; fi
+
+  post-deployment-observability:
+    name: Post-Deployment Observability & Slack Notification
+    needs:
+      - deploy-cloudflare
+      - deploy-aws
+      - deploy-gcp
+      - deploy-azure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Mermaid Cockpit
+        run: bash scripts/generate_mermaid_dashboard.sh
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL }}
+          slack-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          text: |
+            Deployment Completed
+            - Cloudflare: ${{ needs.deploy-cloudflare.result }}
+            - AWS: ${{ needs.deploy-aws.result }}
+            - GCP: ${{ needs.deploy-gcp.result }}
+            - Azure: ${{ needs.deploy-azure.result }}
+            - Drift Status: ${{ needs.workflow-drift-selfheal.outputs.drift-status }}
