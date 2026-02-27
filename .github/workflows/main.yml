@@ -1,230 +1,172 @@
-name: AxiomCore CI/CD - Autonomous Self-Healing Multi-Cloud
+name: AxiomCore Full CI/CD
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   workflow_dispatch:
 
 env:
-  NODE_VERSION: 20.x
+  NODE_VERSION: 20
   PYTHON_VERSION: 3.12
-  DOCKER_IMAGE_NAME: axiomcore/platform
-  MULTI_ARCH: "linux/amd64,linux/arm64,windows/amd64"
-  DEPLOY_ENV: production
+  DOCKER_IMAGE_NAME: axiomcore/autonomous
+  MULTI_ARCH: linux/amd64,linux/arm64
   CLOUD_TARGETS: cloudflare,aws,gcp,azure
-  DRY_RUN: "false"  # true for simulation only
+  DRY_RUN: true
+  COCKPIT_DIR: axiomcore-cockpit
 
 jobs:
 
-  # -----------------------------
-  # 1️⃣ Self-Healing Drift Check
-  # -----------------------------
   workflow-drift-selfheal:
-    name: Workflow Drift Check + Self-Healing
+    name: Workflow Drift Self-Heal
     runs-on: ubuntu-latest
+    outputs:
+      drift-status: ${{ steps.drift-status.outputs.status }}
     steps:
-      - uses: actions/checkout@v4
-
-      # Embed Cognitive Mermaid Diagram Inline
-      - name: Cognitive Map Reference
-        run: |
-          cat <<'EOF' > cognitive_map.mmd
-          %% AxiomCore CI/CD Cognitive Map - Dry-Run, Non-Blocking, Self-Healing
-          flowchart TD
-              A[workflow-drift-selfheal<br>(Self-Healing & Drift Check)]
-                  -->|success| B[setup-environment<br>(Cross-Platform Setup)]
-                  -->|failure| A1[Generate self-healed YAML<br>(Draft for review)]
-
-              B --> C[build-and-test<br>(MCP Validation, Backend Tests)]
-              C --> D[docker-build-and-push<br>(Multi-Arch Docker Build)]
-
-              D --> E1[deploy-cloudflare<br>(continue-on-error)]
-              D --> E2[deploy-aws<br>(continue-on-error)]
-              D --> E3[deploy-gcp<br>(continue-on-error)]
-              D --> E4[deploy-azure<br>(continue-on-error)]
-
-              classDef dryrun fill:#fffae6,stroke:#ffcc00,stroke-width:2px;
-              class E1,E2,E3,E4 dryrun;
-
-              E1 --> F[post-deployment<br>(Dashboards & Slack Notifications)]
-              E2 --> F
-              E3 --> F
-              E4 --> F
-
-              F -->|detect drift| A
-              F -->|normal completion| G[Deployment Complete ✅]
-
-              classDef critical fill:#ffe6e6,stroke:#ff0000,stroke-width:2px;
-              class A critical
-          EOF
-          echo "Cognitive map extracted inline to cognitive_map.mmd"
+      - name: Checkout Repo
+        uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pip install pyyaml
 
-      - name: Run drift check with self-healing
+      - name: Run Drift Detection
+        id: drift-status
         run: |
           python scripts/check_workflow_drift_selfheal.py \
-            --yaml .github/workflows/axiomcore-deploy.yml \
-            --mermaid cognitive_map.mmd \
+            --workflow .github/workflows/axiomcore-deploy.yml \
+            --mermaid ${COCKPIT_DIR}/mermaid/cognitive_map.mmd \
             --output .github/workflows/axiomcore-deploy.selfheal.yml
+          if [ -f ".github/workflows/axiomcore-deploy.selfheal.yml" ]; then
+            echo "status=self-healed" >> $GITHUB_OUTPUT
+          else
+            echo "status=drift-detected" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Commit corrected YAML
-        if: always()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows/axiomcore-deploy.selfheal.yml
-          git commit -m "Auto-self-healed workflow YAML" || echo "No changes to commit"
-          git push origin HEAD || echo "Push skipped in PR context"
-
-  # -----------------------------
-  # 2️⃣ Cross-Platform Environment Setup
-  # -----------------------------
   setup-environment:
     name: Cross-Platform Environment Setup
     needs: workflow-drift-selfheal
     runs-on: ${{ matrix.os }}
-    if: ${{ needs.workflow-drift-selfheal.conclusion == 'success' }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - name: Setup Docker Buildx
+      - name: Install Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Install jq (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y jq
-      - name: Install jq (Windows)
-        if: runner.os == 'Windows'
-        run: choco install jq -y
+      - name: Install jq
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then choco install jq; else sudo apt-get install -y jq; fi
 
-  # -----------------------------
-  # 3️⃣ Build & Test
-  # -----------------------------
   build-and-test:
     name: Build & Test
     needs: setup-environment
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
+      - name: Install Node & Python Dependencies
         run: |
           npm ci
           pip install -r requirements.txt
-      - name: Run backend tests
+      - name: Run Backend Tests
         run: pytest tests/
       - name: MCP Validation
-        run: echo "Running MCP validation..." || echo "Non-blocking error"
+        run: echo "MCP Validation placeholder (non-blocking)"
 
-  # -----------------------------
-  # 4️⃣ Docker Multi-Arch Build & Push
-  # -----------------------------
-  docker-build-and-push:
+  docker-build-push:
     name: Docker Multi-Arch Build & Push
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Docker Login
+      - name: Login to Docker
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-      - name: Build & Push Multi-Arch Image
+      - name: Build & Push
         run: |
-          docker buildx create --use --name axiomcore-builder
-          docker buildx build \
-            --platform ${{ env.MULTI_ARCH }} \
-            $([[ "${{ env.DRY_RUN }}" == "true" ]] && echo "--load" || echo "--push") \
-            -t ${{ env.DOCKER_IMAGE_NAME }}:latest .
+          docker buildx create --use --name axiomcore-builder || true
+          if [ "${{ env.DRY_RUN }}" = "true" ]; then
+            docker buildx build --platform ${{ env.MULTI_ARCH }} --load -t ${{ env.DOCKER_IMAGE_NAME }} .
+          else
+            docker buildx build --platform ${{ env.MULTI_ARCH }} --push -t ${{ env.DOCKER_IMAGE_NAME }} .
+          fi
 
-  # -----------------------------
-  # 5️⃣ Multi-Cloud Deployment (Non-Blocking)
-  # -----------------------------
   deploy-cloudflare:
-    name: Cloudflare Deployment
-    needs: docker-build-and-push
+    name: Deploy to Cloudflare
+    needs: docker-build-push
     runs-on: ubuntu-latest
     continue-on-error: true
+    if: contains(env.CLOUD_TARGETS, 'cloudflare')
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to Cloudflare
-        if: contains(env.CLOUD_TARGETS, 'cloudflare')
+      - name: Cloudflare Deployment
         uses: cloudflare/wrangler-action@v2
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          environment: ${{ env.DEPLOY_ENV }}
-        env:
-          DRY_RUN: ${{ env.DRY_RUN }}
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          environment: production
+          dryRun: ${{ env.DRY_RUN }}
 
   deploy-aws:
-    name: AWS Deployment
-    needs: docker-build-and-push
+    name: Deploy to AWS
+    needs: docker-build-push
     runs-on: ubuntu-latest
     continue-on-error: true
+    if: contains(env.CLOUD_TARGETS, 'aws')
     steps:
-      - name: Configure AWS
-        if: contains(env.CLOUD_TARGETS, 'aws')
-        uses: aws-actions/configure-aws-credentials@v3
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - name: Deploy to AWS ECS/EKS
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Deploy (Dry-Run Support)
         run: |
-          [[ "${{ env.DRY_RUN }}" == "true" ]] && echo "Dry run: skipping AWS deploy" || echo "Deploying to AWS..."
+          if [ "${{ env.DRY_RUN }}" = "true" ]; then echo "AWS dry-run"; else echo "Deploy AWS..."; fi
 
   deploy-gcp:
-    name: GCP Deployment
-    needs: docker-build-and-push
+    name: Deploy to GCP
+    needs: docker-build-push
     runs-on: ubuntu-latest
     continue-on-error: true
+    if: contains(env.CLOUD_TARGETS, 'gcp')
     steps:
-      - name: Setup GCP
-        if: contains(env.CLOUD_TARGETS, 'gcp')
-        uses: google-github-actions/setup-gcloud@v1
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/setup-gcloud@v1
         with:
           service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-          project_id: your-gcp-project
-      - name: Deploy to GCP
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      - name: Deploy (Dry-Run Support)
         run: |
-          [[ "${{ env.DRY_RUN }}" == "true" ]] && echo "Dry run: skipping GCP deploy" || echo "Deploying to GCP..."
+          if [ "${{ env.DRY_RUN }}" = "true" ]; then echo "GCP dry-run"; else echo "Deploy GCP..."; fi
 
   deploy-azure:
-    name: Azure Deployment
-    needs: docker-build-and-push
+    name: Deploy to Azure
+    needs: docker-build-push
     runs-on: ubuntu-latest
     continue-on-error: true
+    if: contains(env.CLOUD_TARGETS, 'azure')
     steps:
-      - name: Login to Azure
-        if: contains(env.CLOUD_TARGETS, 'azure')
-        uses: azure/login@v1
+      - uses: actions/checkout@v4
+      - uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Deploy to Azure
+      - name: Deploy (Dry-Run Support)
         run: |
-          [[ "${{ env.DRY_RUN }}" == "true" ]] && echo "Dry run: skipping Azure deploy" || echo "Deploying to Azure..."
+          if [ "${{ env.DRY_RUN }}" = "true" ]; then echo "Azure dry-run"; else echo "Deploy Azure..."; fi
 
-  # -----------------------------
-  # 6️⃣ Post-Deployment Observability
-  # -----------------------------
-  post-deployment:
-    name: Post-Deployment Observability & Notifications
+  post-deployment-observability:
+    name: Post-Deployment Observability & Slack Notification
     needs:
       - deploy-cloudflare
       - deploy-aws
@@ -232,17 +174,17 @@ jobs:
       - deploy-azure
     runs-on: ubuntu-latest
     steps:
-      - name: Update QGPS Dashboards
-        run: echo "Updating dashboards..." || echo "Non-blocking: dashboard update failed"
-      - name: Slack Notification
+      - name: Update Mermaid Cockpit
+        run: bash scripts/generate_mermaid_dashboard.sh
+      - name: Send Slack Notification
         uses: slackapi/slack-github-action@v1
         with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          channel-id: ${{ secrets.SLACK_CHANNEL }}
           slack-token: ${{ secrets.SLACK_BOT_TOKEN }}
           text: |
-            ✅ Deployment completed
-            Dry Run: ${{ env.DRY_RUN }}
-            Cloudflare: ${{ needs.deploy-cloudflare.result }}
-            AWS: ${{ needs.deploy-aws.result }}
-            GCP: ${{ needs.deploy-gcp.result }}
-            Azure: ${{ needs.deploy-azure.result }}
+            Deployment Completed
+            - Cloudflare: ${{ needs.deploy-cloudflare.result }}
+            - AWS: ${{ needs.deploy-aws.result }}
+            - GCP: ${{ needs.deploy-gcp.result }}
+            - Azure: ${{ needs.deploy-azure.result }}
+            - Drift Status: ${{ needs.workflow-drift-selfheal.outputs.drift-status }}
