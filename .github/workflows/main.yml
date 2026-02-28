@@ -1,183 +1,176 @@
-name: AxiomCore Autonomous CI/CD
+name: AxiomCore Enterprise CI/CD w/Self-Healing + Email Alerts
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-  workflow_dispatch:
+    branches: [main, staging, dev]
 
-env:
-  NODE_VERSION: 20
-  PYTHON_VERSION: 3.12
-  DOCKER_IMAGE_NAME: axiomcore/platform
-  MULTI_ARCH: linux/amd64,linux/arm64
-  DRY_RUN: false
-  DEPLOY_ENV: production
-
-# -------------------------------------------------
-# 1️⃣ PREFLIGHT SECRETS VALIDATION
-# -------------------------------------------------
 jobs:
-  preflight-secrets:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Validate Required Secrets
-        run: |
-          required_secrets=(
-            "${{ secrets.DOCKER_HUB_USERNAME }}"
-            "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
-            "${{ secrets.SLACK_BOT_TOKEN }}"
-          )
 
-          for secret in "${required_secrets[@]}"; do
-            if [ -z "$secret" ]; then
-              echo "❌ Missing required secret"
-              exit 1
-            fi
-          done
-          echo "✅ Secrets validated"
-
-# -------------------------------------------------
-# 2️⃣ WORKFLOW DRIFT SELF-HEAL (SAFE)
-# -------------------------------------------------
-  workflow-drift-selfheal:
+  setup-environment:
     runs-on: ubuntu-latest
-    needs: preflight-secrets
+    outputs:
+      workspace: ${{ steps.workspace.outputs.path }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: '3.11'
 
-      - name: Generate Self-Healed YAML
-        run: |
-          python scripts/check_workflow_drift_selfheal.py \
-            --output .github/workflows/selfheal-preview.yml
-
-      - name: Upload Self-Heal Artifact
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          name: workflow-selfheal-preview
-          path: .github/workflows/selfheal-preview.yml
+          node-version: '20'
 
-# -------------------------------------------------
-# 3️⃣ BUILD & TEST
-# -------------------------------------------------
-  build-and-test:
+      - name: Install PowerShell Core
+        uses: PowerShell/PowerShell@v7.5.4
+
+      - name: Determine Workspace Root
+        id: workspace
+        run: |
+          echo "path=$(pwd)" >> $GITHUB_OUTPUT
+
+  backend-build-deploy:
     runs-on: ubuntu-latest
-    needs: workflow-drift-selfheal
+    needs: setup-environment
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - run: npm ci
-      - run: pip install -r requirements.txt
-      - run: pytest tests/
-
-# -------------------------------------------------
-# 4️⃣ DOCKER MULTI-ARCH BUILD
-# -------------------------------------------------
-  docker-multiarch:
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
-      - name: Build & Push
+      - name: Install Backend Dependencies
         run: |
-          if [ "${{ env.DRY_RUN }}" = "true" ]; then
-            echo "Dry run – no push"
-          else
-            docker buildx build \
-              --platform ${{ env.MULTI_ARCH }} \
-              --push \
-              -t ${{ env.DOCKER_IMAGE_NAME }}:latest .
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Backend Tests
+        continue-on-error: false
+        run: |
+          cd backend
+          pytest tests
+
+      - name: Build Backend Docker Image
+        continue-on-error: false
+        run: |
+          cd backend
+          docker build -t gcr.io/$GCP_PROJECT_ID/axiomcore-backend:latest .
+
+      - name: Push Backend Docker Image
+        continue-on-error: false
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          echo $GCP_SA_KEY | gcloud auth activate-service-account --key-file=-
+          gcloud auth configure-docker
+          docker push gcr.io/$GCP_PROJECT_ID/axiomcore-backend:latest
+
+      - name: Deploy Backend to Cloud Run with Self-Healing
+        continue-on-error: true
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ secrets.GCP_REGION }}
+        run: |
+          set -e
+          echo "Deploying backend..."
+          gcloud run deploy axiomcore-backend \
+            --image gcr.io/$GCP_PROJECT_ID/axiomcore-backend:latest \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated || echo "⚠️ Deployment failed, triggering rollback..."
+          # Rollback to last stable image
+          LAST_STABLE=$(gcloud container images list-tags gcr.io/$GCP_PROJECT_ID/axiomcore-backend --filter="tags:stable" --limit=1 --format="get(digest)")
+          if [ -n "$LAST_STABLE" ]; then
+            gcloud run deploy axiomcore-backend \
+              --image gcr.io/$GCP_PROJECT_ID/axiomcore-backend@$LAST_STABLE \
+              --region $REGION \
+              --platform managed \
+              --allow-unauthenticated
           fi
 
-# -------------------------------------------------
-# 5️⃣ DEPLOY CLOUDFLARE (SAFE)
-# -------------------------------------------------
-  deploy-cloudflare:
+      - name: Send Backend Notification Email
+        if: failure() || always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "⚠️ AxiomCore Backend Self-Healing Alert"
+          body: |
+            Workflow: ${{ github.workflow }}
+            Job: ${{ github.job }}
+            Status: ${{ job.status }}
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref }}
+            Time: $(date)
+            Check cockpit logs: .brain/cockpit-log.json
+          to: farichva@gmail.com
+          from: farichva@gmail.com
+          secure: true
+
+  frontend-build-deploy:
     runs-on: ubuntu-latest
-    needs: docker-multiarch
-    continue-on-error: true
+    needs: setup-environment
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy via Wrangler Action
-        if: env.DRY_RUN != 'true'
-        uses: cloudflare/wrangler-action@v2
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-
-# -------------------------------------------------
-# 6️⃣ POST-DEPLOY OBSERVABILITY + SLACK
-# -------------------------------------------------
-  post-deploy-observability:
-    runs-on: ubuntu-latest
-    needs:
-      - deploy-cloudflare
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Generate Mermaid Dashboard
-        run: bash scripts/generate_mermaid_dashboard.sh
-
-      - name: Send Slack Notification
-        uses: slackapi/slack-github-action@v1
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        with:
-          payload: |
-            {
-              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
-              "text": "AxiomCore Deployment Completed",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Cloudflare:* ${{ needs.deploy-cloudflare.result }}"
-                  }
-                }
-              ]
-            }
-
-# -------------------------------------------------
-# 7️⃣ QGPS TELEMETRY EXPORT
-# -------------------------------------------------
-  qgps-telemetry:
-    runs-on: ubuntu-latest
-    needs:
-      - deploy-cloudflare
-    steps:
-      - name: Generate Telemetry JSON
+      - name: Install Frontend Dependencies
         run: |
-          cat <<EOF > qgps-status.json
-          {
-            "cloudflare": "${{ needs.deploy-cloudflare.result }}",
-            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }
-          EOF
+          cd frontend
+          npm install
 
-      - uses: actions/upload-artifact@v4
+      - name: Build Frontend Production Assets
+        continue-on-error: false
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Deploy Frontend to Cloudflare Pages
+        continue-on-error: true
+        uses: cloudflare/pages-action@v1
         with:
-          name: qgps-telemetry
-          path: qgps-status.json
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          projectName: ${{ secrets.CF_PROJECT_NAME }}
+          directory: ./frontend/dist
+
+      - name: Send Frontend Notification Email
+        if: failure() || always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "⚠️ AxiomCore Frontend Self-Healing Alert"
+          body: |
+            Workflow: ${{ github.workflow }}
+            Job: ${{ github.job }}
+            Status: ${{ job.status }}
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref }}
+            Time: $(date)
+            Check cockpit logs: .brain/cockpit-log.json
+          to: farichva@gmail.com
+          from: farichva@gmail.com
+          secure: true
+
+  launch-qgps-cockpit:
+    runs-on: ubuntu-latest
+    needs: [setup-environment, backend-build-deploy, frontend-build-deploy]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run TECHFUSION-QGPS.ps1 in Production Mode
+        shell: pwsh
+        run: |
+          $MaxConcurrency = 2
+          $Mode = "prod"
+          & "${{ github.workspace }}/scripts/TECHFUSION-QGPS.ps1" -MaxConcurrency $MaxConcurrency -Mode $Mode
+
+      - name: Upload Cockpit Log Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cockpit-log
+          path: .brain/cockpit-log.json
