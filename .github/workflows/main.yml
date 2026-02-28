@@ -1,255 +1,183 @@
-name: AxiomCore CI/CD
+name: AxiomCore Autonomous CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  pull_request:
   workflow_dispatch:
 
 env:
-  PYTHON_VERSION: 3.12
   NODE_VERSION: 20
-  DOCKER_IMAGE_NAME: axiomcore/agentic
+  PYTHON_VERSION: 3.12
+  DOCKER_IMAGE_NAME: axiomcore/platform
   MULTI_ARCH: linux/amd64,linux/arm64
-  DRY_RUN: true
-  CLOUD_TARGETS: "cloudflare,aws,gcp,azure"
+  DRY_RUN: false
   DEPLOY_ENV: production
-  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
 
+# -------------------------------------------------
+# 1️⃣ PREFLIGHT SECRETS VALIDATION
+# -------------------------------------------------
 jobs:
-
-  # -----------------------------
-  # 0️⃣ Pre-flight Secrets Validation
-  # -----------------------------
   preflight-secrets:
-    name: Pre-Flight Secrets Validation
     runs-on: ubuntu-latest
     steps:
-      - name: Validate critical secrets
+      - name: Validate Required Secrets
         run: |
-          : "${DOCKER_HUB_USERNAME:?Missing DOCKER_HUB_USERNAME}"
-          : "${DOCKER_HUB_ACCESS_TOKEN:?Missing DOCKER_HUB_ACCESS_TOKEN}"
-          : "${GCP_SERVICE_ACCOUNT_KEY:?Missing GCP_SERVICE_ACCOUNT_KEY}"
-          : "${GCP_PROJECT_ID:?Missing GCP_PROJECT_ID}"
-          : "${AWS_ACCESS_KEY_ID:?Missing AWS_ACCESS_KEY_ID}"
-          : "${AWS_SECRET_ACCESS_KEY:?Missing AWS_SECRET_ACCESS_KEY}"
-          : "${AZURE_CREDENTIALS:?Missing AZURE_CREDENTIALS}"
-          : "${CLOUDFLARE_API_TOKEN:?Missing CLOUDFLARE_API_TOKEN}"
+          required_secrets=(
+            "${{ secrets.DOCKER_HUB_USERNAME }}"
+            "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+            "${{ secrets.SLACK_BOT_TOKEN }}"
+          )
 
-  # -----------------------------
-  # 1️⃣ Workflow Drift Self-Heal
-  # -----------------------------
+          for secret in "${required_secrets[@]}"; do
+            if [ -z "$secret" ]; then
+              echo "❌ Missing required secret"
+              exit 1
+            fi
+          done
+          echo "✅ Secrets validated"
+
+# -------------------------------------------------
+# 2️⃣ WORKFLOW DRIFT SELF-HEAL (SAFE)
+# -------------------------------------------------
   workflow-drift-selfheal:
-    name: Workflow Drift Check & Self-Heal
     runs-on: ubuntu-latest
     needs: preflight-secrets
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Python dependencies
-        run: pip install pyyaml
-
-      - name: Run Drift Checker
+      - name: Generate Self-Healed YAML
         run: |
           python scripts/check_workflow_drift_selfheal.py \
-            --workflow .github/workflows/axiomcore-deploy.yml \
-            --mermaid .github/workflows/cognitive_map.mmd \
-            --output .github/workflows/axiomcore-deploy.selfheal.yml
+            --output .github/workflows/selfheal-preview.yml
 
-      # Manual-trigger gated commit or upload artifact
-      - name: Upload Self-Healed Workflow
+      - name: Upload Self-Heal Artifact
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: axiomcore-selfheal
-          path: .github/workflows/axiomcore-deploy.selfheal.yml
+          name: workflow-selfheal-preview
+          path: .github/workflows/selfheal-preview.yml
 
-  # -----------------------------
-  # 2️⃣ Cross-Platform Environment Setup
-  # -----------------------------
-  setup-environment:
-    name: Setup Environment
-    runs-on: ${{ matrix.os }}
+# -------------------------------------------------
+# 3️⃣ BUILD & TEST
+# -------------------------------------------------
+  build-and-test:
+    runs-on: ubuntu-latest
     needs: workflow-drift-selfheal
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - run: npm ci
+      - run: pip install -r requirements.txt
+      - run: pytest tests/
 
-      - name: Install jq
-        run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            sudo apt-get update && sudo apt-get install -y jq
-          else
-            choco install jq
-          fi
-
-  # -----------------------------
-  # 3️⃣ Build & Test
-  # -----------------------------
-  build-and-test:
-    name: Build and Test
-    runs-on: ubuntu-latest
-    needs: setup-environment
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install Node.js dependencies
-        run: npm ci
-
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run Backend Tests
-        run: pytest tests/
-
-      - name: MCP Validation (non-blocking)
-        run: |
-          echo "MCP validation placeholder - logs only"
-          exit 0
-
-  # -----------------------------
-  # 4️⃣ Docker Multi-Arch Build & Push
-  # -----------------------------
+# -------------------------------------------------
+# 4️⃣ DOCKER MULTI-ARCH BUILD
+# -------------------------------------------------
   docker-multiarch:
-    name: Docker Multi-Arch Build & Push
     runs-on: ubuntu-latest
     needs: build-and-test
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Docker Login
-        uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Build & Push
         run: |
-          docker buildx create --use --name axiomcore-builder
-          if [ "${DRY_RUN}" = "true" ]; then
-            docker buildx build --platform $MULTI_ARCH --load -t $DOCKER_IMAGE_NAME .
+          if [ "${{ env.DRY_RUN }}" = "true" ]; then
+            echo "Dry run – no push"
           else
-            docker buildx build --platform $MULTI_ARCH --push -t $DOCKER_IMAGE_NAME .
+            docker buildx build \
+              --platform ${{ env.MULTI_ARCH }} \
+              --push \
+              -t ${{ env.DOCKER_IMAGE_NAME }}:latest .
           fi
 
-  # -----------------------------
-  # 5️⃣ Multi-Cloud Deploy
-  # -----------------------------
+# -------------------------------------------------
+# 5️⃣ DEPLOY CLOUDFLARE (SAFE)
+# -------------------------------------------------
   deploy-cloudflare:
-    name: Deploy Cloudflare
     runs-on: ubuntu-latest
     needs: docker-multiarch
     continue-on-error: true
-    if: contains(env.CLOUD_TARGETS, 'cloudflare')
     steps:
-      - uses: actions/checkout@v3
-      - uses: cloudflare/wrangler-action@v2
+      - uses: actions/checkout@v4
+
+      - name: Deploy via Wrangler Action
+        if: env.DRY_RUN != 'true'
+        uses: cloudflare/wrangler-action@v2
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      - name: Deploy
-        run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            echo "[Dry Run] Cloudflare deployment skipped"
-          else
-            wrangler publish
-          fi
 
-  deploy-aws:
-    name: Deploy AWS
-    runs-on: ubuntu-latest
-    needs: docker-multiarch
-    continue-on-error: true
-    if: contains(env.CLOUD_TARGETS, 'aws')
-    steps:
-      - uses: actions/checkout@v3
-      - uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - name: Deploy
-        run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            echo "[Dry Run] AWS deployment skipped"
-          else
-            echo "Deploying to AWS..."
-
-  deploy-gcp:
-    name: Deploy GCP
-    runs-on: ubuntu-latest
-    needs: docker-multiarch
-    continue-on-error: true
-    if: contains(env.CLOUD_TARGETS, 'gcp')
-    steps:
-      - uses: actions/checkout@v3
-      - uses: google-github-actions/setup-gcloud@v1
-        with:
-          service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      - name: Deploy
-        run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            echo "[Dry Run] GCP deployment skipped"
-          else
-            echo "Deploying to GCP..."
-
-  deploy-azure:
-    name: Deploy Azure
-    runs-on: ubuntu-latest
-    needs: docker-multiarch
-    continue-on-error: true
-    if: contains(env.CLOUD_TARGETS, 'azure')
-    steps:
-      - uses: actions/checkout@v3
-      - uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Deploy
-        run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            echo "[Dry Run] Azure deployment skipped"
-          else
-            echo "Deploying to Azure..."
-
-  # -----------------------------
-  # 6️⃣ Post-Deployment Observability
-  # -----------------------------
+# -------------------------------------------------
+# 6️⃣ POST-DEPLOY OBSERVABILITY + SLACK
+# -------------------------------------------------
   post-deploy-observability:
-    name: Post-Deployment Observability
     runs-on: ubuntu-latest
-    needs: [deploy-cloudflare, deploy-aws, deploy-gcp, deploy-azure]
+    needs:
+      - deploy-cloudflare
     steps:
+      - uses: actions/checkout@v4
+
       - name: Generate Mermaid Dashboard
         run: bash scripts/generate_mermaid_dashboard.sh
 
       - name: Send Slack Notification
         uses: slackapi/slack-github-action@v1
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-          slack-message: |
-            CI/CD run complete.
-            Dry run: ${{ env.DRY_RUN }}
-            Cloudflare: ${{ needs.deploy-cloudflare.result }}
-            AWS: ${{ needs.deploy-aws.result }}
-            GCP: ${{ needs.deploy-gcp.result }}
-            Azure: ${{ needs.deploy-azure.result }}
+          payload: |
+            {
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "text": "AxiomCore Deployment Completed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Cloudflare:* ${{ needs.deploy-cloudflare.result }}"
+                  }
+                }
+              ]
+            }
+
+# -------------------------------------------------
+# 7️⃣ QGPS TELEMETRY EXPORT
+# -------------------------------------------------
+  qgps-telemetry:
+    runs-on: ubuntu-latest
+    needs:
+      - deploy-cloudflare
+    steps:
+      - name: Generate Telemetry JSON
+        run: |
+          cat <<EOF > qgps-status.json
+          {
+            "cloudflare": "${{ needs.deploy-cloudflare.result }}",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qgps-telemetry
+          path: qgps-status.json
