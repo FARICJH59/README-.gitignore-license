@@ -67,7 +67,7 @@ def main() -> int:
 
     if percentage is None:
         message = f"Coverage file not found at {coverage_path}."
-        if args.require-data:
+        if args.require_data:
             print(f"❌ {message}")
             return 1
         print(f"⚠️  {message} Skipping threshold enforcement.")
