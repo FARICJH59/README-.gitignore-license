@@ -5,12 +5,12 @@ export class CoreAgent extends Agent {
 
   @callable()
   addTask(task: string) {
-    this.setState({ tasks: [...(this.state.tasks ?? []), task] });
+    this.setState({ tasks: [...this.state.tasks, task] });
     return this.state.tasks;
   }
 
   @callable()
   listTasks() {
-    return this.state.tasks ?? [];
+    return this.state.tasks;
   }
 }

@@ -10,7 +10,7 @@
     "types": ["@cloudflare/workers-types"],
     "baseUrl": ".",
     "paths": {
-      "agents/*": ["frontend/src/agents/*"]
+      "agents/*": ["backend/agents/*", "frontend/src/agents/*"]
     }
   },
   "include": ["backend/**/*", "frontend/src/**/*"]

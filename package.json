@@ -4,7 +4,7 @@
   "private": true,
   "description": "AxiomCore + Cloudflare AI Playground Copilot Scaffold",
   "scripts": {
-    "dev:worker": "echo \"Run wrangler dev backend/workers/mainWorker.ts\"",
+    "dev:worker": "wrangler dev backend/workers/mainWorker.ts --local",
     "dev:frontend": "cd frontend && npm run dev",
     "build": "echo \"Add worker bundling here\""
   },

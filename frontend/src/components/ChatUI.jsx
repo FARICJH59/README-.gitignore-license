@@ -6,6 +6,11 @@ const bubbleClass = {
   assistant: "bg-slate-100 text-slate-900 mr-auto",
 };
 
+const roleTextClass = {
+  user: "text-indigo-50",
+  assistant: "text-slate-900",
+};
+
 export default function ChatUI() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -47,7 +52,9 @@ export default function ChatUI() {
               key={`${msg.ts}-${idx}`}
               className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm ${bubbleClass[msg.role] ?? ""}`}
             >
-              <p className="text-xs uppercase tracking-wide text-slate-500">{msg.role}</p>
+              <p className={`text-xs uppercase tracking-wide ${roleTextClass[msg.role] ?? "text-slate-900"}`}>
+                {msg.role}
+              </p>
               <p className="mt-1 leading-relaxed">{msg.content}</p>
             </div>
           ))

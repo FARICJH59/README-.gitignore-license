@@ -10,7 +10,8 @@ export async function hfInference(model: string, payload: Record<string, any>, t
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(`HF request failed: ${res.status}`);
+    const detail = await res.text();
+    throw new Error(`HF request failed: ${res.status} - ${detail}`);
   }
   return res.json();
 }
