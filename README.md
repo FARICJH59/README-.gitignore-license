@@ -1,190 +1,166 @@
-# axiomcore
+# AxiomCore + Cloudflare AI Playground Copilot Scaffold
 
-AxiomCore MVP — backend, frontend, AI orchestration
+An opinionated starter that pairs AxiomCore-style agents with Cloudflare Workers AI, Durable Objects, Workflows, and a React chat UI.
 
-## Agentic Fullstack Platform scaffold
+## 1️⃣ Project Structure
 
-This repository now includes a minimal React + FastAPI starter so you can iterate quickly on the Agentic Fullstack Platform.
-
-### Project structure
-- `frontend/` — React 18 + Vite + TailwindCSS  
-  - `pages/index.jsx` — sample landing page that pings the backend (with `index.js` wrapper)  
-  - `styles/globals.css` — Tailwind base + global styles  
-  - `tailwind.config.js`, `postcss.config.js`, `vite.config.js` — frontend tooling config
-- `server.py` — FastAPI app with sample `/api/hello` endpoint (CORS enabled)
-- `main.py` — placeholder for backend orchestration logic
-- `intelliops_cli_runner.py` and `intelliops_runner.zip` — placeholders for agent runtime
-- `install_and_launch.py` — installs deps and launches backend + frontend
-- PowerShell automation: `start-all.ps1`, `setup-fullstack.ps1`, `setup-axiomcore-fullstack.ps1`, `launch_all.ps1`, `push_to_github.ps1`
-
-### Run locally
-1) Backend
-```bash
-python -m venv .venv && source .venv/bin/activate  # optional
-pip install -r requirements.txt
-python server.py
+```
+axiomcore-cloudflare/
+├─ backend/
+│   ├─ agents/
+│   │   ├─ coreAgent.ts          # Base agent class (state + orchestration)
+│   │   ├─ chatAgent.ts          # AIChatAgent for streaming chat
+│   │   └─ workflowAgents/       # Multi-step workflow agents
+│   ├─ workflows/
+│   │   └─ contentWorkflow.ts    # Example workflow: fetch → AI → approve → publish
+│   ├─ workers/
+│   │   └─ mainWorker.ts         # Cloudflare Worker bootstrap
+│   └─ utils/
+│       ├─ r2.ts                 # Storage helpers
+│       ├─ vectorize.ts          # RAG helpers
+│       └─ huggingface.ts        # HF API integration
+│
+├─ frontend/
+│   ├─ src/
+│   │   ├─ App.jsx               # React entry
+│   │   ├─ pages/
+│   │   │   └─ index.jsx
+│   │   └─ components/
+│   │       └─ ChatUI.jsx        # Chat component using useAgent
+│   └─ styles/
+│       └─ globals.css
+│
+├─ package.json
+├─ tailwind.config.ts
+├─ tsconfig.json
+└─ scripts/cloudflare-scaffold.sh
 ```
 
-2) Frontend (in a second terminal)
+## 2️⃣ Backend Agent Classes
+
+`backend/agents/coreAgent.ts`
+```ts
+import { Agent, callable } from "agents";
+
+export class CoreAgent extends Agent {
+  initialState = { tasks: [] };
+
+  @callable()
+  addTask(task: string) {
+    this.setState({ tasks: [...this.state.tasks, task] });
+    return this.state.tasks;
+  }
+
+  @callable()
+  listTasks() {
+    return this.state.tasks;
+  }
+}
+```
+
+`backend/agents/chatAgent.ts`
+```ts
+import { AIChatAgent } from "@cloudflare/ai-chat";
+import { createWorkersAI } from "workers-ai-provider";
+import { streamText, convertToModelMessages } from "ai";
+
+export class ChatAgent extends AIChatAgent {
+  async onChatMessage() {
+    const workersai = createWorkersAI({ binding: this.env.AI });
+    const result = streamText({
+      model: workersai("@cf/zai-org/glm-4.7-flash"),
+      messages: await convertToModelMessages(this.messages),
+    });
+    return result.toUIMessageStreamResponse();
+  }
+}
+```
+
+## 3️⃣ Cloudflare Workflow Example
+
+`backend/workflows/contentWorkflow.ts`
+```ts
+import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from "cloudflare/workflows";
+
+export class ContentWorkflow extends WorkflowEntrypoint {
+  async run(event: WorkflowEvent, step: WorkflowStep) {
+    const data = await step.do("fetch material", async () => {
+      const obj = await this.env.R2_BUCKET.get(event.params.key);
+      if (!obj) throw new Error(`Missing object for key ${event.params.key}`);
+      return await obj.arrayBuffer();
+    });
+
+    const output = await step.do("generate content", async () => {
+      return await this.env.AI.run("@cf/llava-hf/llava-1.5-7b-hf", {
+        prompt: "Generate article based on this material",
+        max_tokens: 300,
+        data: Array.from(new Uint8Array(data)),
+      });
+    });
+    const serializedOutput = typeof output === "string" ? output : JSON.stringify(output);
+
+    await step.waitForEvent("await approval", { event: "approved", timeout: "24h" });
+
+    await step.do("publish", async () => {
+      await this.env.R2_BUCKET.put(`public/${event.params.key}`, serializedOutput);
+    });
+
+    return output;
+  }
+}
+```
+
+## 4️⃣ Front-End Integration
+
+`frontend/src/components/ChatUI.jsx`
+```jsx
+import { useAgent } from "agents/react";
+import { useState } from "react";
+
+export default function ChatUI() {
+  const [messages, setMessages] = useState([]);
+  const agent = useAgent({
+    agent: "ChatAgent",
+    onStateUpdate: (state) => setMessages(state.messages ?? []),
+  });
+
+  const sendMessage = (msg) => agent.stub.sendMessage(msg);
+
+  return (
+    // UI rendering chat history + composer
+  );
+}
+```
+
+The default `frontend/src/App.jsx` wires the chat UI alongside feature highlights.
+
+## 5️⃣ CLI / Copilot Scaffold Script
+
+Run the single-command scaffold:
+```bash
+bash scripts/cloudflare-scaffold.sh
+```
+This clones the scaffold, installs backend/frontend dependencies, and launches both dev servers.
+
+## 6️⃣ Features Enabled
+
+✅ Agentic, multi-agent orchestration with AxiomCore  
+✅ Stateful agents on Cloudflare Durable Objects  
+✅ Multi-step workflows with Cloudflare Workflows  
+✅ RAG pipelines using Vectorize DB  
+✅ HuggingFace / Workers AI integration for LLMs, vision, and embeddings  
+✅ React front-end using useAgent hooks  
+✅ Human-in-the-loop approvals and event-driven tasks  
+
+---
+
+### Local frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Vite proxies `/api/*` requests to `http://localhost:8000` so the sample page can reach the FastAPI endpoint.
 
-### Extend
-- Add new backend routes in `server.py` and share logic in `main.py`.
-- Add agent routines in `intelliops_cli_runner.py`.
-- Build UI components under `frontend/pages` or `frontend/src` and style with Tailwind.
-- Use the provided PowerShell scripts to automate setup and local launches.
-
-## Description
-
-This repository serves as the foundation for the AxiomCore MVP platform, providing backend services, frontend interfaces, and AI orchestration capabilities. The project is a comprehensive full-stack solution supporting both PowerShell and Python development environments.
-
-## Features
-
-- Full-stack platform architecture
-- PowerShell scripting support
-- Python application development
-- Cross-platform compatibility
-
-## Getting Started
-
-### Prerequisites
-
-- PowerShell 7.0 or higher
-- Python 3.8 or higher
-
-### Installation
-
-#### Option 1: Clone the Repository
-
-Clone the repository:
-
-```bash
-git clone https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git
-cd axiomcore
-```
-
-#### Option 2: Create a New Repository
-
-If you need to create a new axiomcore repository, you can use the provided scripts:
-
-**Using Bash (Linux/macOS):**
-```bash
-./create-repo.sh
-```
-
-**Using PowerShell (Windows/Cross-platform):**
-```powershell
-./create-repo.ps1
-```
-
-**Or manually with GitHub CLI:**
-```bash
-gh repo create TechFusion-Quantum-Global-Platform/axiomcore \
-  --private \
-  --description "AxiomCore MVP — backend, frontend, AI orchestration" \
-  --confirm
-```
-
-After creating the repository, you can initialize it with your project files:
-
-```bash
-# Clone the empty repository
-git clone https://github.com/TechFusion-Quantum-Global-Platform/axiomcore.git
-cd axiomcore
-
-# Copy your project files into the directory
-# Then commit and push them
-git add .
-git commit -m "Initial commit"
-git push -u origin main
-```
-
-> **Note**: Option 2 requires GitHub CLI (`gh`) to be installed and authenticated. The repository will be created as private under the TechFusion-Quantum-Global-Platform organization.
-
-## QGPS Autonomous Cockpit
-
-The QGPS Autonomous Cockpit provides automated orchestration for multiple repositories with dependency management and dev server launch capabilities.
-
-### Usage
-
-```powershell
-# Start all registered repositories
-.\scripts\qgps-cockpit.ps1
-
-# Specify max concurrency (default: 2)
-.\scripts\qgps-cockpit.ps1 -MaxConcurrency 3
-
-# Use custom brain core path
-.\scripts\qgps-cockpit.ps1 -BrainCorePath "C:\custom\brain-core"
-```
-
-### Features
-
-- **Automatic Dependency Installation**: Runs `npm install` for all registered repositories with package.json
-- **Smart Building**: Executes build scripts if they exist in package.json
-- **Dev Server Launch**: Automatically starts dev servers in separate PowerShell windows (Windows) or background jobs (Linux/macOS)
-- **Comprehensive Logging**: All cockpit runs are logged to `.brain/cockpit-log.json` with detailed error tracking
-- **Environment Validation**: Checks Node.js and npm versions before processing
-- **Concurrency Control**: Respects MaxConcurrency parameter to limit simultaneous server launches
-- **Cross-Platform Support**: Works on Windows (PowerShell 5.1+), Linux, and macOS (PowerShell Core 7+)
-- **Registry Validation**: Validates repo-registry.json structure with helpful error messages
-
-### Error Handling & Logging
-
-The cockpit now includes comprehensive error handling:
-- Try/catch blocks around all npm operations
-- Detailed error logs with timestamps, stack traces, and error categories
-- Fallback behavior for missing or malformed configuration files
-- Warning messages for non-critical issues
-
-Error logs are stored in `.brain/cockpit-log.json` with the following structure:
-```json
-{
-  "lastRun": "2026-02-19T14:21:28.2940131+00:00",
-  "processedRepos": ["repo1", "repo2"],
-  "launchedServers": ["repo1"],
-  "maxConcurrency": 2,
-  "runningJobs": 1,
-  "platform": {
-    "edition": "Core",
-    "version": "7.4.13",
-    "os": "Ubuntu 24.04.3 LTS",
-    "isWindows": false
-  },
-  "environment": {
-    "nodeVersion": "v24.13.0",
-    "npmVersion": "11.6.2"
-  },
-  "detailedLogs": [
-    {
-      "timestamp": "2026-02-19T14:21:28.5Z",
-      "repository": "repo1",
-      "action": "npm-install",
-      "status": "success",
-      "message": "Dependencies installed successfully"
-    }
-  ]
-}
-```
-
-### Prerequisites
-
-Before using the cockpit, ensure:
-1. Repositories are registered using `.\scripts\generate-autopilot-repo.ps1`
-2. Node.js 18.x or higher is installed for JavaScript/TypeScript projects
-3. npm is installed and available in PATH
-4. Brain core is initialized with `brain-core/repo-registry.json`
-5. For cross-platform usage, PowerShell Core 7+ is recommended
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+### Notes
+- Backend TypeScript files are scaffolded for Cloudflare Worker + Durable Object deployment.
+- A lightweight `useAgent` stub is provided so the chat UI functions locally without backend wiring.

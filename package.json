@@ -1,0 +1,14 @@
+{
+  "name": "axiomcore-cloudflare",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AxiomCore + Cloudflare AI Playground Copilot Scaffold",
+  "scripts": {
+    "dev:worker": "wrangler dev backend/workers/mainWorker.ts --local",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "echo \"Add worker bundling here\""
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
