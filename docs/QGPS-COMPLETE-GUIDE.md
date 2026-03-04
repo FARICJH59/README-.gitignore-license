@@ -265,11 +265,12 @@ When you update policies in `brain-core/compliance/`:
 
 The included workflow (`ci-cd-autopilot.yml`) automatically:
 
-1. Checks out each repository
-2. Syncs with Brain core
-3. Validates compliance
-4. Runs orchestrator
-5. Uploads compliance logs as artifacts
+1. Checks out the main brain repository (containing scripts and brain-core)
+2. Checks out each target repository from the matrix (axiomcore, rugged-silo, veo3)
+3. Syncs each target repository with Brain core policies
+4. Validates compliance for each target repository
+5. Runs orchestrator to show status
+6. Uploads compliance logs as artifacts
 
 **Customizing the workflow:**
 

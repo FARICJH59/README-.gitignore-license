@@ -176,3 +176,10 @@ infra/terraform/.terraform.lock.hcl
 # Deployment artifacts
 last-deployment.json
 *.log
+
+# Brain generated files (keep .brain/cockpit-log.json tracked)
+.brain/brain-version.json
+.brain/compliance-log.json
+.brain/sync-metadata.json
+.brain/mandatory-modules.json
+.brain/infra-policy.json
