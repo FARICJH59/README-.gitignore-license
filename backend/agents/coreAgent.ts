@@ -27,7 +27,7 @@ export class CoreAgent extends Agent {
 
   @callable()
   completeTask(id: string) {
-    const tasks = this.state.tasks.map((t) => (t.id === id ? { ...t, status: "done" } : t));
+    const tasks = this.state.tasks.map((t) => (t.id === id ? { ...t, status: "done" as const } : t));
     this.setState({ tasks });
     return tasks;
   }

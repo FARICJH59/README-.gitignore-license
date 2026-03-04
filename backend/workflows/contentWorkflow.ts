@@ -27,7 +27,7 @@ export class ContentWorkflow extends WorkflowEntrypoint<WorkflowEnv> {
     const serializedOutput = typeof output === "string" ? output : JSON.stringify(output);
 
     await step.do("vectorize draft", async () => {
-      const text = typeof output === "string" ? output : JSON.stringify(output);
+      const text = serializedOutput;
       const embedding = await this.env.AI.run("@cf/baai/bge-small-en-v1.5", { text });
       const vector = Array.isArray(embedding.data) ? embedding.data : embedding;
       await upsertVector(this.env as any, "content-drafts", event.params.key, vector as number[], {
