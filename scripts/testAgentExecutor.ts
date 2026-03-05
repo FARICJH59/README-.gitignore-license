@@ -31,7 +31,7 @@ async function main() {
     console.log("Retry exhausted as expected:", (err as Error).message);
   }
 
-  const scheduledId = scheduler.schedule("DataParserAgent", '{"scheduled":true}', 50);
+  const scheduledId = scheduler.schedule("DataParserAgent", { scheduled: true }, 50);
   console.log("Scheduled job id:", scheduledId);
 
   const intervalId = scheduler.scheduleRecurring("DataParserAgent", 50, { heartbeat: true });

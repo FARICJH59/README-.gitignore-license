@@ -11,6 +11,17 @@ const isDebugEnabled = () =>
   (typeof process !== "undefined" && process.env?.DEBUG_BOOTSTRAP === "true") ||
   (globalThis as { DEBUG_BOOTSTRAP?: boolean }).DEBUG_BOOTSTRAP === true;
 
+const DEFAULT_TRANSFORMERS: Record<string, (value: unknown) => unknown> = {
+  FraudDetectionAgent: (value: unknown) => {
+    const maybeParsed = value as { parsed?: { key: string; value: unknown }[] };
+    if (maybeParsed?.parsed && Array.isArray(maybeParsed.parsed)) {
+      const reconstructed = Object.fromEntries(maybeParsed.parsed.map(({ key, value: v }) => [key, v]));
+      return [reconstructed];
+    }
+    return value;
+  },
+};
+
 export class AgentExecutor {
   private audit: AuditLogger;
   private metrics: MetricsRecorder;
@@ -24,19 +35,14 @@ export class AgentExecutor {
     metricsRecorder?: MetricsRecorder;
     selfHeal?: AgentSelfHeal;
     debug?: boolean;
+    transformers?: Record<string, (value: unknown) => unknown>;
   }) {
     this.audit = options?.auditLogger ?? new AuditLogger();
     this.metrics = options?.metricsRecorder ?? new MetricsRecorder();
     this.selfHeal = options?.selfHeal;
     this.debug = options?.debug ?? isDebugEnabled();
-    this.registerTransformer("FraudDetectionAgent", (value: unknown) => {
-      const maybeParsed = value as { parsed?: { key: string; value: unknown }[] };
-      if (maybeParsed?.parsed && Array.isArray(maybeParsed.parsed)) {
-        const reconstructed = Object.fromEntries(maybeParsed.parsed.map(({ key, value: v }) => [key, v]));
-        return [reconstructed];
-      }
-      return value;
-    });
+    const transformerConfig = options?.transformers ?? DEFAULT_TRANSFORMERS;
+    Object.entries(transformerConfig).forEach(([agentName, transformer]) => this.registerTransformer(agentName, transformer));
   }
 
   private logDebug(message: string, extra?: Record<string, unknown>) {
