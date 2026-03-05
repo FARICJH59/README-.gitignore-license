@@ -25,7 +25,7 @@ async function main() {
   console.log("Pipeline output:", pipelineResult);
 
   try {
-    await retryManager.retry("FraudDetectionAgent", null as any, 2);
+    await retryManager.retry("FraudDetectionAgent", undefined, 2);
   } catch (err) {
     console.log("Retry exhausted as expected:", (err as Error).message);
   }

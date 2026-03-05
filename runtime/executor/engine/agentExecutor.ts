@@ -17,6 +17,19 @@ export class AgentExecutor {
   private selfHeal?: AgentSelfHeal;
   private debug: boolean;
   private agentCache = new Map<string, AgentInstance>();
+  private transformers: Map<string, (value: unknown) => unknown> = new Map([
+    [
+      "FraudDetectionAgent",
+      (value: unknown) => {
+        const maybeParsed = value as { parsed?: { key: string; value: unknown }[] };
+        if (maybeParsed?.parsed && Array.isArray(maybeParsed.parsed)) {
+          const reconstructed = Object.fromEntries(maybeParsed.parsed.map(({ key, value: v }) => [key, v]));
+          return [reconstructed];
+        }
+        return value;
+      },
+    ],
+  ]);
 
   constructor(options?: {
     auditLogger?: AuditLogger;
@@ -99,7 +112,11 @@ export class AgentExecutor {
     const methodName = this.resolveMethod(instance);
 
     try {
-      const result = await (instance as Record<string, any>)[methodName](input);
+      const callable = (instance as Record<string, unknown>)[methodName];
+      if (typeof callable !== "function") {
+        throw new Error(`Method ${methodName} is not callable on ${agentName}`);
+      }
+      const result = await (callable as (payload: unknown) => unknown).call(instance, input);
       this.metrics.recordExecution(1);
       this.audit.record(agentName, methodName, permission, { layer: descriptor.layer });
       this.logDebug(`Executed ${agentName}.${methodName}`);
@@ -142,15 +159,8 @@ export class AgentExecutor {
   }
 
   private transformInputForAgent(agentName: string, value: unknown) {
-    const descriptor = this.resolveDescriptor(agentName);
-    if (descriptor.name === "FraudDetectionAgent") {
-      const maybeParsed = value as { parsed?: { key: string; value: unknown }[] };
-      if (maybeParsed?.parsed && Array.isArray(maybeParsed.parsed)) {
-        const reconstructed = Object.fromEntries(maybeParsed.parsed.map(({ key, value: v }) => [key, v]));
-        return Array.isArray(reconstructed) ? reconstructed : [reconstructed];
-      }
-    }
-    return value;
+    const transformer = this.transformers.get(agentName);
+    return transformer ? transformer(value) : value;
   }
 
   async restartAgent(agentName: string) {

@@ -2,13 +2,15 @@ import { AuditLogger } from "../../governance/auditLogger";
 import { AgentExecutor } from "./agentExecutor";
 
 type TimerHandle = ReturnType<typeof setTimeout> | ReturnType<typeof setInterval>;
+type TimerKind = "timeout" | "interval";
+type StoredTimer = { handle: TimerHandle; type: TimerKind };
 
 const isDebugEnabled = () =>
   (typeof process !== "undefined" && process.env?.DEBUG_BOOTSTRAP === "true") ||
   (globalThis as { DEBUG_BOOTSTRAP?: boolean }).DEBUG_BOOTSTRAP === true;
 
 export class AgentScheduler {
-  private timers = new Map<string, TimerHandle>();
+  private timers = new Map<string, StoredTimer>();
   private audit: AuditLogger;
   private debug: boolean;
 
@@ -33,7 +35,7 @@ export class AgentScheduler {
         this.timers.delete(id);
       }
     }, delayMs);
-    this.timers.set(id, handle);
+    this.timers.set(id, { handle, type: "timeout" });
     this.logDebug(`Scheduled ${agentName} in ${delayMs}ms`, { id });
     return id;
   }
@@ -48,16 +50,19 @@ export class AgentScheduler {
         this.audit.record(agentName, "recurring-failure", "read", { error: (err as Error).message });
       }
     }, intervalMs);
-    this.timers.set(id, handle);
+    this.timers.set(id, { handle, type: "interval" });
     this.logDebug(`Scheduled recurring ${agentName} every ${intervalMs}ms`, { id });
     return id;
   }
 
   cancelScheduled(id: string) {
-    const handle = this.timers.get(id);
-    if (!handle) return false;
-    if (typeof clearTimeout !== "undefined") clearTimeout(handle as ReturnType<typeof setTimeout>);
-    if (typeof clearInterval !== "undefined") clearInterval(handle as ReturnType<typeof setInterval>);
+    const stored = this.timers.get(id);
+    if (!stored) return false;
+    if (stored.type === "timeout") {
+      clearTimeout(stored.handle as ReturnType<typeof setTimeout>);
+    } else {
+      clearInterval(stored.handle as ReturnType<typeof setInterval>);
+    }
     this.timers.delete(id);
     this.logDebug(`Cancelled schedule ${id}`);
     return true;

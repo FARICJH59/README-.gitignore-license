@@ -51,8 +51,17 @@ export class FraudDetectionAgent extends Agent {
       lastAuditLogCount: 0,
       flagged: [],
     };
-    super({ state: baseState });
-    this.initialState = baseState;
+    const hydratedState: FraudState = {
+      metrics: { ...baseState.metrics },
+      lastAuditLogCount: baseState.lastAuditLogCount,
+      flagged: [...baseState.flagged],
+    };
+    super({ state: hydratedState });
+    this.initialState = {
+      metrics: { ...baseState.metrics },
+      lastAuditLogCount: baseState.lastAuditLogCount,
+      flagged: [...baseState.flagged],
+    };
   }
 
   private ensurePermission(permission: Permission) {

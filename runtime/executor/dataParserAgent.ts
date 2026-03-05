@@ -81,12 +81,12 @@ export class DataParserAgent extends Agent<ParserState> {
   @callable()
   parseData(input: ParseInput): ParseResult {
     this.ensurePermission("read");
+    this.metrics.recordExecution(1);
     const normalized = this.normalizeInput(input);
     const errors: string[] = [];
     if (!normalized.data) {
       errors.push(normalized.error ?? "Unknown parse error");
       this.metrics.recordError(1);
-      this.metrics.recordExecution(1);
       this.recordAudit("parseData", "read", { errors: errors.length });
       this.updateMetrics();
       return { parsed: [], errors };
@@ -95,7 +95,6 @@ export class DataParserAgent extends Agent<ParserState> {
     const parsed = this.toKeyValues(normalized.data);
     this.metrics.recordParsed(1);
     this.recordAudit("parseData", "read", { parsedKeys: parsed.length });
-    this.metrics.recordExecution(1);
     this.updateMetrics();
 
     if (this.debug) {
