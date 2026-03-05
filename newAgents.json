@@ -2,5 +2,6 @@
   { "path": "runtime/evolution/visionAgent.ts", "layer": "evolution" },
   { "path": "runtime/revenue/pricingAgent.ts", "layer": "revenue" },
   { "path": "runtime/executor/fraudDetectionAgent.ts", "layer": "executor" },
-  { "path": "runtime/executor/dataParserAgent.ts", "layer": "executor", "permissions": ["read", "write"] }
+  { "path": "runtime/executor/dataParserAgent.ts", "layer": "executor", "permissions": ["read", "write"] },
+  { "path": "runtime/executor/predictionAgent.ts", "layer": "executor", "permissions": ["read", "write"] }
 ]

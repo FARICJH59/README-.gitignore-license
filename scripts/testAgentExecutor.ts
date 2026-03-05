@@ -1,6 +1,7 @@
 import { agentBootstrap } from "../runtime/bootstrap/agentBootstrap";
 import "../runtime/executor/dataParserAgent";
 import "../runtime/executor/fraudDetectionAgent";
+import "../runtime/executor/predictionAgent";
 import "../runtime/revenue/pricingAgent";
 import { AgentExecutor } from "../runtime/executor/engine/agentExecutor";
 import { AgentScheduler } from "../runtime/executor/engine/agentScheduler";
@@ -20,8 +21,11 @@ async function main() {
   const parsed = await executor.run("DataParserAgent", { id: "100", status: "ok", amount: 42 });
   console.log("DataParserAgent output:", parsed);
 
+  const prediction = await executor.run("PredictionAgent", { amount: 120, velocity: 8, locationRisk: 30 });
+  console.log("PredictionAgent output:", prediction);
+
   const pipelineResult = await executor.executePipeline(
-    ["DataParserAgent", "FraudDetectionAgent", "PricingAgent"],
+    ["DataParserAgent", "FraudDetectionAgent", "PredictionAgent", "PricingAgent"],
     { id: "tx-500", amount: 1200, velocity: 12, location: "remote" },
   );
   console.log("Pipeline output:", pipelineResult);
