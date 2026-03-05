@@ -10,6 +10,7 @@ type AuditEvent = {
 
 export class AuditLogger {
   private events: AuditEvent[] = [];
+  private count = 0;
 
   record(agent: string, action: string, permission: Permission, details?: Record<string, unknown>) {
     const event: AuditEvent = {
@@ -20,10 +21,15 @@ export class AuditLogger {
       details,
     };
     this.events.push(event);
+    this.count += 1;
     console.debug(`[Audit] ${agent} -> ${action} (${permission})`, details ?? {});
   }
 
   getEvents() {
     return [...this.events];
+  }
+
+  getCount() {
+    return this.count;
   }
 }

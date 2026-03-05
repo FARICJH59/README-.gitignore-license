@@ -1,6 +1,6 @@
 export type LayerName = "bootstrap" | "executor" | "mesh" | "evolution" | "marketplace" | "revenue" | "governance";
 
-export type Capability = "analyzeTransactions" | "flagSuspicious";
+export type Capability = "analyzeTransactions" | "flagSuspicious" | "parseData";
 
 export type Permission = "read" | "write" | "alert";
 export const ALL_LAYERS: LayerName[] = ["bootstrap", "executor", "mesh", "evolution", "marketplace", "revenue", "governance"];

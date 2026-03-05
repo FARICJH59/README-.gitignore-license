@@ -8,7 +8,8 @@
     "dev:frontend": "cd frontend && npm run dev",
     "build": "echo \"Add worker bundling here\"",
     "validate:new-agent": "ts-node scripts/validateNewAgent.ts",
-    "test:fraud-agent": "ts-node scripts/testFraudDetectionAgent.ts"
+    "test:fraud-agent": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testFraudDetectionAgent.ts",
+    "test:data-parser": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testDataParserAgent.ts"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
