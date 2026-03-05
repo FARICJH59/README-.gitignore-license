@@ -23,8 +23,12 @@ export class AgentScheduler {
     if (this.debug) console.debug(`[AgentScheduler] ${message}`, extra ?? {});
   }
 
+  private generateTimerId(type: TimerKind) {
+    return `${type}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
   schedule(agentName: string, input: unknown, delayMs: number) {
-    const id = `timeout-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const id = this.generateTimerId("timeout");
     const handle = setTimeout(async () => {
       try {
         await this.executor.run(agentName, input);
@@ -41,7 +45,7 @@ export class AgentScheduler {
   }
 
   scheduleRecurring(agentName: string, intervalMs: number, input?: unknown) {
-    const id = `interval-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const id = this.generateTimerId("interval");
     const handle = setInterval(async () => {
       try {
         await this.executor.run(agentName, input);

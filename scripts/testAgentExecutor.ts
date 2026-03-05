@@ -7,6 +7,8 @@ import { AgentScheduler } from "../runtime/executor/engine/agentScheduler";
 import { AgentRetryManager } from "../runtime/executor/engine/agentRetryManager";
 import { AgentSelfHeal } from "../runtime/executor/engine/agentSelfHeal";
 
+const RECURRING_TEST_DURATION_MS = 120;
+
 async function main() {
   const selfHeal = new AgentSelfHeal({ debug: true });
   const executor = new AgentExecutor({ debug: true, selfHeal });
@@ -35,7 +37,7 @@ async function main() {
   console.log("Scheduled job id:", scheduledId);
 
   const intervalId = scheduler.scheduleRecurring("DataParserAgent", 50, { heartbeat: true });
-  await new Promise((resolve) => setTimeout(resolve, 120));
+  await new Promise((resolve) => setTimeout(resolve, RECURRING_TEST_DURATION_MS));
   scheduler.cancelScheduled(intervalId);
 
   console.log("Executor metrics:", executor.getMetrics());

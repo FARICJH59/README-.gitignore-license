@@ -137,11 +137,11 @@ export class AgentExecutor {
       return result as AsyncIterable<unknown>;
     }
     const self = this;
-    async function* generator() {
+    async function* singleValueGenerator() {
       self.logDebug(`Streaming single result for ${agentName}`);
       yield result;
     }
-    return generator();
+    return singleValueGenerator();
   }
 
   async executePipeline(agentList: string[], input: unknown) {
