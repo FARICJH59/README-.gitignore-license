@@ -17,19 +17,7 @@ export class AgentExecutor {
   private selfHeal?: AgentSelfHeal;
   private debug: boolean;
   private agentCache = new Map<string, AgentInstance>();
-  private transformers: Map<string, (value: unknown) => unknown> = new Map([
-    [
-      "FraudDetectionAgent",
-      (value: unknown) => {
-        const maybeParsed = value as { parsed?: { key: string; value: unknown }[] };
-        if (maybeParsed?.parsed && Array.isArray(maybeParsed.parsed)) {
-          const reconstructed = Object.fromEntries(maybeParsed.parsed.map(({ key, value: v }) => [key, v]));
-          return [reconstructed];
-        }
-        return value;
-      },
-    ],
-  ]);
+  private transformers = new Map<string, (value: unknown) => unknown>();
 
   constructor(options?: {
     auditLogger?: AuditLogger;
@@ -41,6 +29,14 @@ export class AgentExecutor {
     this.metrics = options?.metricsRecorder ?? new MetricsRecorder();
     this.selfHeal = options?.selfHeal;
     this.debug = options?.debug ?? isDebugEnabled();
+    this.registerTransformer("FraudDetectionAgent", (value: unknown) => {
+      const maybeParsed = value as { parsed?: { key: string; value: unknown }[] };
+      if (maybeParsed?.parsed && Array.isArray(maybeParsed.parsed)) {
+        const reconstructed = Object.fromEntries(maybeParsed.parsed.map(({ key, value: v }) => [key, v]));
+        return [reconstructed];
+      }
+      return value;
+    });
   }
 
   private logDebug(message: string, extra?: Record<string, unknown>) {
@@ -73,12 +69,7 @@ export class AgentExecutor {
 
   private async instantiateAgent(descriptor: AgentDescriptor): Promise<AgentInstance> {
     const modulePath = this.toModulePath(descriptor);
-    let mod: Record<string, unknown>;
-    try {
-      mod = await import(modulePath);
-    } catch (error) {
-      mod = await import(`${modulePath}.ts`);
-    }
+    const mod: Record<string, unknown> = await import(modulePath);
     const AgentCtor = mod[descriptor.name] as new () => AgentInstance;
     if (!AgentCtor) {
       throw new Error(`Agent class ${descriptor.name} not found at ${descriptor.path}`);
@@ -161,6 +152,10 @@ export class AgentExecutor {
   private transformInputForAgent(agentName: string, value: unknown) {
     const transformer = this.transformers.get(agentName);
     return transformer ? transformer(value) : value;
+  }
+
+  registerTransformer(agentName: string, transformer: (value: unknown) => unknown) {
+    this.transformers.set(agentName, transformer);
   }
 
   async restartAgent(agentName: string) {

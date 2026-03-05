@@ -51,6 +51,7 @@ export class FraudDetectionAgent extends Agent {
       lastAuditLogCount: 0,
       flagged: [],
     };
+    // MetricSnapshot is flat today; shallow copies are sufficient to avoid shared references.
     const cloneState = (): FraudState => ({
       metrics: { ...baseState.metrics },
       lastAuditLogCount: baseState.lastAuditLogCount,

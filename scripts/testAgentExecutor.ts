@@ -25,6 +25,7 @@ async function main() {
   console.log("Pipeline output:", pipelineResult);
 
   try {
+    // Intentionally pass an invalid input to demonstrate retry and self-heal behavior.
     await retryManager.retry("FraudDetectionAgent", undefined, 2);
   } catch (err) {
     console.log("Retry exhausted as expected:", (err as Error).message);
