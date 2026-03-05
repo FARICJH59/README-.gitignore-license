@@ -6,9 +6,19 @@
   "scripts": {
     "dev:worker": "wrangler dev backend/workers/mainWorker.ts --local",
     "dev:frontend": "cd frontend && npm run dev",
-    "build": "echo \"Add worker bundling here\""
+    "build": "echo \"Add worker bundling here\"",
+    "validate:new-agent": "ts-node scripts/validateNewAgent.ts",
+    "test:fraud-agent": "ts-node scripts/testFraudDetectionAgent.ts"
   },
   "devDependencies": {
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
+  },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS",
+      "moduleResolution": "Node"
+    }
   }
 }

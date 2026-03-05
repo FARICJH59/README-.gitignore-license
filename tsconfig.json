@@ -13,5 +13,5 @@
       "agents/*": ["backend/agents/*", "frontend/src/agents/*"]
     }
   },
-  "include": ["backend/**/*", "frontend/src/**/*"]
+  "include": ["backend/**/*", "frontend/src/**/*", "runtime/**/*", "scripts/**/*.ts"]
 }
