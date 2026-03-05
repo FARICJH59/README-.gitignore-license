@@ -27,7 +27,7 @@ flowchart TD
 
   subgraph "Telemetry & Governance"
     ML[MetricsRecorder\nparsed/errors/executions/retries/recoveries]
-    AL[AuditLogger\nread/alert events]
+    AL[AuditLogger\nrecords events & alerts]
   end
 
   %% ====================
@@ -88,9 +88,11 @@ flowchart TD
   %% ====================
   %% PredictionAgent Details
   %% ====================
-  PR -.-|"feature normalization (0-100)"| PR
-  PR -.-|"observed-max guard"| PR
-  PR -.-|"score output -> Pricing"| PC
+  note right of PR
+    Feature normalization (0-100 baseline)
+    Observed-max guardrail
+    Score output -> PricingAgent
+  end
 
   %% ====================
   %% Styling / Notes
