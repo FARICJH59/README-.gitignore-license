@@ -1,4 +1,4 @@
-import { Agent } from "agents";
+import { Agent } from "../shims/agents";
 import { AgentDescriptor } from "../types";
 import { agentBootstrap } from "../bootstrap/agentBootstrap";
 import { enforceLayerPlacement } from "../governance/layerValidator";

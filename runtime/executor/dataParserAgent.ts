@@ -30,7 +30,14 @@ export class DataParserAgent extends Agent<ParserState> {
 
   constructor(config?: { debug?: boolean }) {
     const baseState: ParserState = {
-      metrics: { parsed: 0, errors: 0, lastUpdated: Date.now() },
+      metrics: {
+        parsed: 0,
+        errors: 0,
+        executions: 0,
+        retries: 0,
+        recoveries: 0,
+        lastUpdated: Date.now(),
+      },
       lastAuditLogCount: 0,
     };
     super({ state: baseState });
@@ -79,6 +86,7 @@ export class DataParserAgent extends Agent<ParserState> {
     if (!normalized.data) {
       errors.push(normalized.error ?? "Unknown parse error");
       this.metrics.recordError(1);
+      this.metrics.recordExecution(1);
       this.recordAudit("parseData", "read", { errors: errors.length });
       this.updateMetrics();
       return { parsed: [], errors };
@@ -87,6 +95,7 @@ export class DataParserAgent extends Agent<ParserState> {
     const parsed = this.toKeyValues(normalized.data);
     this.metrics.recordParsed(1);
     this.recordAudit("parseData", "read", { parsedKeys: parsed.length });
+    this.metrics.recordExecution(1);
     this.updateMetrics();
 
     if (this.debug) {

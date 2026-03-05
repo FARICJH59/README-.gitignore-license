@@ -1,4 +1,4 @@
-import { Agent, callable } from "agents";
+import { Agent, callable } from "../shims/agents";
 import { AuditLogger } from "../governance/auditLogger";
 import { registerExecutorAgent } from "./agentRegistry";
 import { AgentDescriptor, Capability, MetricSnapshot, Permission } from "../types";
@@ -43,11 +43,17 @@ export class FraudDetectionAgent extends Agent {
   readonly permissions: Permission[] = ["read", "write", "alert"];
   private audit = new AuditLogger();
 
-  initialState: FraudState = {
-    metrics: { analyzed: 0, flagged: 0, alerts: 0, lastUpdated: Date.now() },
-    lastAuditLogCount: 0,
-    flagged: [],
-  };
+  initialState: FraudState;
+
+  constructor() {
+    const baseState: FraudState = {
+      metrics: { analyzed: 0, flagged: 0, alerts: 0, lastUpdated: Date.now() },
+      lastAuditLogCount: 0,
+      flagged: [],
+    };
+    super({ state: baseState });
+    this.initialState = baseState;
+  }
 
   private ensurePermission(permission: Permission) {
     if (!this.permissions.includes(permission)) {
