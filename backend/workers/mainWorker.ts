@@ -4,6 +4,17 @@ import { handleTextEmbedding, handleImageEmbedding } from "./ml/embeddingWorker"
 import { handleClassification, handleDetection } from "./cv/cvWorker";
 import { handleListDevices, handleTelemetry } from "./iot/iotWorker";
 import { generateSchema, validateBindings } from "../utils/schemaValidator";
+import { AgentBootstrap } from "../runtime/orchestrator/agentBootstrap";
+
+const bootstrap = new AgentBootstrap();
+
+bootstrap.autoRegister([
+  { name: "CoreAgent", role: "core", permissions: ["*"], version: "1.0" },
+  { name: "ChatAgent", role: "chat", permissions: ["read", "write"], version: "1.0" },
+  { name: "ContentApprovalAgent", role: "workflow", permissions: ["approve", "publish"], version: "1.0" },
+]);
+
+console.log("Registered agents:", bootstrap.getRegisteredAgents());
 
 interface AxiomEnv {
   AXIOM_DO: DurableObjectNamespace;
