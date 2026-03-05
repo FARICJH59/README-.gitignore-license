@@ -6,15 +6,31 @@ import { handleListDevices, handleTelemetry } from "./iot/iotWorker";
 import { generateSchema, validateBindings } from "../utils/schemaValidator";
 import { AgentBootstrap } from "../runtime/orchestrator/agentBootstrap";
 
-const bootstrap = new AgentBootstrap();
+interface WorkerConfig {
+  debugBootstrap: boolean;
+}
 
-bootstrap.autoRegister([
-  { name: "CoreAgent", role: "core", permissions: ["*"], version: "1.0" },
-  { name: "ChatAgent", role: "chat", permissions: ["read", "write"], version: "1.0" },
-  { name: "ContentApprovalAgent", role: "workflow", permissions: ["approve", "publish"], version: "1.0" },
-]);
+const workerConfig: WorkerConfig = {
+  debugBootstrap: Boolean((globalThis as { DEBUG_BOOTSTRAP?: unknown }).DEBUG_BOOTSTRAP),
+};
 
-console.log("Registered agents:", bootstrap.getRegisteredAgents());
+const bootstrap = (() => {
+  const instance = new AgentBootstrap();
+  instance.autoRegister([
+    {
+      name: "CoreAgent",
+      role: "core",
+      permissions: ["tasks:create", "tasks:list", "tasks:complete", "context:update"],
+      version: "1.0",
+    },
+    { name: "ChatAgent", role: "chat", permissions: ["read", "write"], version: "1.0" },
+    { name: "ContentApprovalAgent", role: "workflow", permissions: ["approve", "publish"], version: "1.0" },
+  ]);
+  if (workerConfig.debugBootstrap) {
+    console.debug("Registered agents:", instance.getRegisteredAgents());
+  }
+  return instance;
+})();
 
 interface AxiomEnv {
   AXIOM_DO: DurableObjectNamespace;
