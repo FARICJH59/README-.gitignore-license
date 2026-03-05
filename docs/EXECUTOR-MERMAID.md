@@ -1,70 +1,107 @@
-## AxiomCore Executor Layer (Mermaid)
+## AxiomCore Executor-Layer Runtime Flow
 
 ```mermaid
-flowchart TB
-  %% Layer grouping
-  subgraph RuntimeExecutor["runtime/executor"]
-    subgraph Registration["Registration"]
-      AgentBootstrap["AgentBootstrap\n(registers descriptors)"]
-      AgentRegistry["AgentRegistry\n(registerExecutorAgent)"]
-    end
-
-    subgraph Engine["Execution Engine"]
-      AgentExecutor["AgentExecutor\nrun/stream/executePipeline"]
-      AgentScheduler["AgentScheduler\nschedule + recurring"]
-      AgentRetryManager["AgentRetryManager\nexponential backoff"]
-      AgentSelfHeal["AgentSelfHeal\nrestart on failure"]
-      MetricsRecorder["MetricsRecorder\nparsed/errors/executions/retries/recoveries"]
-      AuditLogger["AuditLogger\nrecords events"]
-    end
-
-    subgraph Agents["Agents"]
-      DataParserAgent["DataParserAgent\n- parseData\n- produces key/value list"]
-      FraudDetectionAgent["FraudDetectionAgent\n- analyzeTransactions\n- flagSuspicious"]
-      PredictionAgent["PredictionAgent\n- execute scoring\n- feature normalization 0-100"]
-    end
+flowchart TD
+  %% ====================
+  %% Subgraphs
+  %% ====================
+  subgraph "Agents"
+    DP[DataParserAgent]
+    FD[FraudDetectionAgent]
+    PR[PredictionAgent]
+    PC[PricingAgent]
   end
 
-  %% Registration flow
-  AgentBootstrap <-- registers --> AgentRegistry
-  AgentRegistry --> AgentExecutor
+  subgraph "Executor Engine"
+    AE[AgentExecutor\nrun | stream | executePipeline]
+    AS[AgentScheduler\nschedule | recurring]
+    RM[AgentRetryManager\nexponential backoff]
+    SH[AgentSelfHeal\nrestart + recover]
+  end
 
-  %% Input/Output
-  IngestInput["Input payload"] --> AgentExecutor
-  AgentExecutor -->|runs| DataParserAgent
-  DataParserAgent -->|parsed key/values| FraudDetectionAgent
-  FraudDetectionAgent -->|flags/metrics| PredictionAgent
-  PredictionAgent -->|score+label output| PipelineOutput["Pipeline Output"]
+  subgraph "Bootstrap & Registry"
+    AB[AgentBootstrap\nload descriptors]
+    AR[AgentRegistry\nregisterExecutorAgent]
+    LV[LayerValidator\nschema & guardrails]
+  end
 
+  subgraph "Telemetry & Governance"
+    ML[MetricsRecorder\nparsed/errors/executions/retries/recoveries]
+    AL[AuditLogger\nread/alert events]
+  end
+
+  %% ====================
+  %% Agent Registration
+  %% ====================
+  DP -->|register| AB
+  FD -->|register| AB
+  PR -->|register| AB
+  PC -->|register| AB
+  AB -->|registers| AR
+  AR -->|validates| LV
+  LV -->|approved catalog| AE
+
+  %% ====================
+  %% Pipeline Flow
+  %% ====================
+  Input["Input payload"] --> DP
+  DP -->|parsed data| FD
+  FD -->|fraud flags| PR
+  PR -->|score + label| PC
+  PC -->|pricing result| Output["Priced output"]
+
+  %% ====================
+  %% Executor Engine Flow
+  %% ====================
+  AE -->|run/stream| DP
+  AE --> FD
+  AE --> PR
+  AE --> PC
+  AE --> AS
+  AS -->|scheduled execution| AE
+  AE --> RM
+  RM -->|retry with backoff| AE
+  AE --> SH
+  SH -->|restart agent| AE
+
+  %% ====================
   %% Metrics & Audit
-  AgentExecutor -.-> AuditLogger
-  AgentExecutor -.-> MetricsRecorder
-  DataParserAgent -. audit .-> AuditLogger
-  FraudDetectionAgent -. audit .-> AuditLogger
-  PredictionAgent -. audit .-> AuditLogger
-  DataParserAgent -. metrics .-> MetricsRecorder
-  FraudDetectionAgent -. metrics .-> MetricsRecorder
-  PredictionAgent -. metrics .-> MetricsRecorder
+  %% ====================
+  DP -. metrics .-> ML
+  FD -. metrics .-> ML
+  PR -. metrics .-> ML
+  PC -. metrics .-> ML
+  AE -. metrics .-> ML
+  AS -. metrics .-> ML
+  RM -. metrics .-> ML
+  SH -. metrics .-> ML
 
-  %% Scheduler / Retry / Self-heal
-  AgentScheduler -->|invoke later/interval| AgentExecutor
-  AgentRetryManager -->|retry on error| AgentExecutor
-  AgentSelfHeal -->|restart agent| AgentExecutor
-  AgentExecutor -->|restarts| AgentSelfHeal
+  DP -. audit .-> AL
+  FD -. audit .-> AL
+  PR -. audit .-> AL
+  PC -. audit .-> AL
+  AE -. audit .-> AL
+  AS -. audit .-> AL
+  RM -. audit .-> AL
+  SH -. audit .-> AL
 
-  %% Notes on PredictionAgent normalization
-  note right of PredictionAgent
-    - Filters non-numeric/NaN features
-    - Normalizes features (0-100 baseline)
-    - Uses observed max to avoid ceiling
-    - Emits score + label (low/medium/high)
-  end
+  %% ====================
+  %% PredictionAgent Details
+  %% ====================
+  PR -.-|"feature normalization (0-100)"| PR
+  PR -.-|"observed-max guard"| PR
+  PR -.-|"score output -> Pricing"| PC
 
-  classDef reg fill:#eef,stroke:#446;
-  classDef eng fill:#efe,stroke:#484;
-  classDef agent fill:#fee,stroke:#844;
+  %% ====================
+  %% Styling / Notes
+  %% ====================
+  classDef agent fill:#f9f,stroke:#333,stroke-width:1px;
+  classDef engine fill:#9f9,stroke:#333,stroke-width:1px;
+  classDef registry fill:#ff9,stroke:#333,stroke-width:1px;
+  classDef telemetry fill:#9ff,stroke:#333,stroke-width:1px;
 
-  class AgentBootstrap,AgentRegistry reg;
-  class AgentExecutor,AgentScheduler,AgentRetryManager,AgentSelfHeal,MetricsRecorder,AuditLogger eng;
-  class DataParserAgent,FraudDetectionAgent,PredictionAgent agent;
+  class DP,FD,PR,PC agent;
+  class AE,AS,RM,SH engine;
+  class AB,AR,LV registry;
+  class ML,AL telemetry;
 ```
