@@ -4,6 +4,33 @@ import { handleTextEmbedding, handleImageEmbedding } from "./ml/embeddingWorker"
 import { handleClassification, handleDetection } from "./cv/cvWorker";
 import { handleListDevices, handleTelemetry } from "./iot/iotWorker";
 import { generateSchema, validateBindings } from "../utils/schemaValidator";
+import { AgentBootstrap } from "../runtime/orchestrator/agentBootstrap";
+
+interface WorkerConfig {
+  debugBootstrap: boolean;
+}
+
+const workerConfig: WorkerConfig = {
+  debugBootstrap: Boolean((globalThis as { DEBUG_BOOTSTRAP?: unknown }).DEBUG_BOOTSTRAP),
+};
+
+const bootstrap = (() => {
+  const instance = new AgentBootstrap();
+  instance.autoRegister([
+    {
+      name: "CoreAgent",
+      role: "core",
+      permissions: ["tasks:create", "tasks:list", "tasks:complete", "context:update"],
+      version: "1.0",
+    },
+    { name: "ChatAgent", role: "chat", permissions: ["read", "write"], version: "1.0" },
+    { name: "ContentApprovalAgent", role: "workflow", permissions: ["approve", "publish"], version: "1.0" },
+  ]);
+  if (workerConfig.debugBootstrap) {
+    console.debug("Registered agents:", instance.getRegisteredAgents());
+  }
+  return instance;
+})();
 
 interface AxiomEnv {
   AXIOM_DO: DurableObjectNamespace;
