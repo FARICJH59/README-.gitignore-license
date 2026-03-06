@@ -23,7 +23,7 @@ export type GraphQuery = {
 };
 
 export interface AgentMemoryEntry {
-  timestamp: number;
+  timestamp?: number;
   data: unknown;
   tags?: string[];
   relatedNodeIds?: string[];

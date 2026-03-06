@@ -17,7 +17,7 @@ export class Agent<TState = unknown> {
     } else {
       this.state = {} as TState;
     }
-    this.env = { ...(this.env ?? {}), ...(init?.env ?? {}) };
+    this.env = { ...(init?.env ?? {}) };
     this.context = init?.env?.context;
   }
 
