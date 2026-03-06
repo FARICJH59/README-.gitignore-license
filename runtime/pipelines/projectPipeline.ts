@@ -28,7 +28,7 @@ export type ProjectPipelineResult = {
 };
 
 // Lightweight post-build health pings to validate scheduler wiring without blocking the caller; short delay keeps tests fast.
-const POST_BUILD_HEARTBEAT_DELAY_MS = 10;
+const SCHEDULER_VALIDATION_DELAY_MS = 10;
 
 export class ProjectPipeline {
   private audit: AuditLogger;
@@ -77,9 +77,9 @@ export class ProjectPipeline {
     });
 
     // Schedule post-build heartbeats for builder agents to validate readiness
-    this.scheduler.schedule("FrontendBuilderAgent", stack, POST_BUILD_HEARTBEAT_DELAY_MS);
-    this.scheduler.schedule("BackendBuilderAgent", stack, POST_BUILD_HEARTBEAT_DELAY_MS);
-    this.scheduler.schedule("DevOpsBuilderAgent", stack, POST_BUILD_HEARTBEAT_DELAY_MS);
+    this.scheduler.schedule("FrontendBuilderAgent", stack, SCHEDULER_VALIDATION_DELAY_MS);
+    this.scheduler.schedule("BackendBuilderAgent", stack, SCHEDULER_VALIDATION_DELAY_MS);
+    this.scheduler.schedule("DevOpsBuilderAgent", stack, SCHEDULER_VALIDATION_DELAY_MS);
 
     return { intent, architecture, stack, backend, frontend, ml, devops, templateName: template.name, buildTimeMs };
   }

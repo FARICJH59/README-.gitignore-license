@@ -97,7 +97,7 @@ const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
     database: "postgres",
     messageQueue: "kafka",
     frontendFramework: "react",
-    backendFramework: "python",
+    backendFramework: "fastapi",
   },
   iot: {
     name: "iot",

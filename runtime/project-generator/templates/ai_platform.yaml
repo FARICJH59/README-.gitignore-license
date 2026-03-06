@@ -25,4 +25,4 @@ infrastructure:
 database: postgres
 messageQueue: kafka
 frontendFramework: react
-backendFramework: python
+backendFramework: fastapi
