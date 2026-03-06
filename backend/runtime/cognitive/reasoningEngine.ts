@@ -22,9 +22,10 @@ export class ReasoningEngine {
 
   findRelationships(nodeId: string) {
     const neighbors = this.graph.getNeighbors(nodeId);
+    const relatedEdges = this.graph.query({ nodeId }).edges;
     const connections = neighbors.map((neighbor) => ({
       neighbor,
-      edges: this.graph.query({ nodeId: nodeId, neighborOf: neighbor.id }).edges,
+      edges: relatedEdges.filter((edge) => edge.from === neighbor.id || edge.to === neighbor.id),
     }));
     this.audit.record(REASONER_AGENT, "findRelationships", "read", { nodeId, neighborCount: neighbors.length });
     this.metrics.recordExecution(1);

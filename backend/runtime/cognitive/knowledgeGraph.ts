@@ -91,14 +91,14 @@ export class KnowledgeGraph {
       if (query.relation && edge.relation !== query.relation) return false;
       if (query.neighborOf) {
         const target = query.neighborOf;
-        if (query.direction === "incoming" && edge.to !== target) return false;
-        if (query.direction === "outgoing" && edge.from !== target) return false;
-        if (!["incoming", "outgoing"].includes(query.direction ?? "any")) {
-          const isMatch = edge.from === target || edge.to === target;
-          if (!isMatch) return false;
-        } else if (edge.from !== target && edge.to !== target) {
-          return false;
-        }
+        const direction = query.direction ?? "any";
+        const matchesIncoming = edge.to === target;
+        const matchesOutgoing = edge.from === target;
+        const matchesAny = matchesIncoming || matchesOutgoing;
+
+        if (direction === "incoming" && !matchesIncoming) return false;
+        if (direction === "outgoing" && !matchesOutgoing) return false;
+        if (direction === "any" && !matchesAny) return false;
       }
       if (query.nodeId) {
         return edge.from === query.nodeId || edge.to === query.nodeId;

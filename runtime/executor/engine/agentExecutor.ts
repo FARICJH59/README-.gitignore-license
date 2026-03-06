@@ -100,8 +100,8 @@ export class AgentExecutor {
       throw new Error(`Agent class ${descriptor.name} not found at ${descriptor.path}`);
     }
     const instance = new AgentCtor();
-    instance.context = this.runtimeContext;
     instance.env = { ...(instance.env as Record<string, unknown>), context: this.runtimeContext };
+    instance.context = (instance.env as { context?: CognitiveRuntimeContext }).context;
     this.agentCache.set(descriptor.name, instance);
     return instance;
   }
@@ -134,11 +134,7 @@ export class AgentExecutor {
       if (typeof callable !== "function") {
         throw new Error(`Method ${methodName} is not callable on ${agentName}`);
       }
-      const result = await (callable as (payload: unknown, context?: CognitiveRuntimeContext) => unknown).call(
-        instance,
-        input,
-        this.runtimeContext,
-      );
+      const result = await (callable as (payload: unknown) => unknown).call(instance, input);
       this.metrics.recordExecution(1);
       this.audit.record(agentName, methodName, permission, { layer: descriptor.layer });
       this.logDebug(`Executed ${agentName}.${methodName}`);
