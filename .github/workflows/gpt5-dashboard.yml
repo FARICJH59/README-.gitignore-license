@@ -61,7 +61,7 @@ jobs:
             echo "method=wif" >> "$GITHUB_OUTPUT"
           else
             echo "method=none" >> "$GITHUB_OUTPUT"
-            echo "No Google Cloud credentials configured; deployment steps will be skipped."
+            echo "::notice::No Google Cloud credentials configured; deployment steps will be skipped."
           fi
 
       - name: Build Docker image (multi-stage)
