@@ -9,5 +9,7 @@ export function enforceLayerPlacement(agent: AgentDescriptor) {
 }
 
 export function validateLayerName(layer: string): layer is LayerName {
-  return ["bootstrap", "executor", "mesh", "evolution", "marketplace", "revenue", "governance"].includes(layer);
+  return ["bootstrap", "executor", "mesh", "evolution", "marketplace", "revenue", "governance", "project-generator"].includes(
+    layer,
+  );
 }

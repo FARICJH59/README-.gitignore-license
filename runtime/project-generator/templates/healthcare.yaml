@@ -1,0 +1,14 @@
+{
+  "name": "healthcare",
+  "industry": "healthcare",
+  "microservices": ["patient", "records", "appointments"],
+  "dataModels": ["patient", "provider", "appointment"],
+  "mlModules": ["triage", "diagnostics"],
+  "apis": ["ehr", "scheduling", "claims"],
+  "frontend": ["patient-portal", "provider-portal"],
+  "infrastructure": ["api-gateway", "hipaa-logging", "secure-storage"],
+  "database": "postgres",
+  "messageQueue": "nats",
+  "frontendFramework": "react",
+  "backendFramework": "fastapi"
+}

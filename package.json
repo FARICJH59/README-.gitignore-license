@@ -10,7 +10,9 @@
     "validate:new-agent": "ts-node scripts/validateNewAgent.ts",
     "test:fraud-agent": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testFraudDetectionAgent.ts",
     "test:data-parser": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testDataParserAgent.ts",
-    "test:executor": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testAgentExecutor.ts"
+    "test:executor": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testAgentExecutor.ts",
+    "test:project-generator": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testProjectGenerator.ts",
+    "axiom": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register cli/axiom.ts"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",

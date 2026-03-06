@@ -15,5 +15,5 @@
       "agents/*": ["runtime/shims/*", "backend/agents/*", "frontend/src/agents/*"]
     }
   },
-  "include": ["backend/**/*", "frontend/src/**/*", "runtime/**/*", "scripts/**/*.ts"]
+  "include": ["backend/**/*", "frontend/src/**/*", "runtime/**/*", "scripts/**/*.ts", "cli/**/*"]
 }

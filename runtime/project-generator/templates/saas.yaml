@@ -1,0 +1,14 @@
+{
+  "name": "saas",
+  "industry": "saas",
+  "microservices": ["billing", "users", "notifications"],
+  "dataModels": ["user", "subscription", "invoice"],
+  "mlModules": ["churn", "recommendations"],
+  "apis": ["billing", "auth", "usage"],
+  "frontend": ["admin-console", "self-service-portal"],
+  "infrastructure": ["api-gateway", "observability", "feature-flags"],
+  "database": "postgres",
+  "messageQueue": "sqs",
+  "frontendFramework": "react",
+  "backendFramework": "node"
+}
