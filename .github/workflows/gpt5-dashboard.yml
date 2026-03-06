@@ -12,6 +12,7 @@ jobs:
   build-deploy-monitor:
     runs-on: ubuntu-latest
     env:
+      # Defaults point to production projects; override via repository variables when needed.
       DEPLOY_REGION: us-central1
       CLOUD_RUN_PROJECTS: ${{ vars.CLOUD_RUN_PROJECTS || 'RUGGED-SILO-476415-P6,axiomcore-platform-642795357173' }}
       EMAIL_ALERT: farichva@gmail.com
