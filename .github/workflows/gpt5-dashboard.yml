@@ -63,15 +63,11 @@ jobs:
             exit 0
           fi
           IFS=',' read -ra projects <<< "${CLOUD_RUN_PROJECTS}"
-          if [[ ${#projects[@]} -eq 0 ]]; then
-            echo "method=none" >> "$GITHUB_OUTPUT"
-            echo "::notice::No valid Cloud Run projects configured; deployment steps will be skipped."
-            exit 0
-          fi
-          for project in "${projects[@]}"; do
+          for idx in "${!projects[@]}"; do
+            project="${projects[$idx]}"
             if [[ -z "${project}" ]]; then
               echo "method=none" >> "$GITHUB_OUTPUT"
-              echo "::notice::Cloud Run project list contains an empty entry; deployment steps will be skipped."
+              echo "::notice::Cloud Run project list contains an empty entry at position $((idx+1)); deployment steps will be skipped."
               exit 0
             fi
           done
