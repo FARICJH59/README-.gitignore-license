@@ -4,8 +4,17 @@ import { AuditLogger } from "../../governance/auditLogger";
 import { MetricsRecorder } from "../../telemetry/metricsRecorder";
 import { AgentDescriptor, Capability, Permission } from "../../types";
 import { AgentSelfHeal } from "./agentSelfHeal";
+import { KnowledgeGraph } from "../../../backend/runtime/cognitive/knowledgeGraph";
+import { MemoryStore } from "../../../backend/runtime/cognitive/memoryStore";
+import { ReasoningEngine } from "../../../backend/runtime/cognitive/reasoningEngine";
 
 type AgentInstance = Agent & { capabilities?: Capability[]; permissions?: Permission[] };
+
+type RuntimeContext = {
+  graph: KnowledgeGraph;
+  memory: MemoryStore;
+  reasoning: ReasoningEngine;
+};
 
 const isDebugEnabled = () =>
   (typeof process !== "undefined" && process.env?.DEBUG_BOOTSTRAP === "true") ||
@@ -25,10 +34,12 @@ const DEFAULT_TRANSFORMERS: Record<string, (value: unknown) => unknown> = {
 export class AgentExecutor {
   private audit: AuditLogger;
   private metrics: MetricsRecorder;
+  private cognitiveMetrics: MetricsRecorder;
   private selfHeal?: AgentSelfHeal;
   private debug: boolean;
   private agentCache = new Map<string, AgentInstance>();
   private transformers = new Map<string, (value: unknown) => unknown>();
+  private runtimeContext: RuntimeContext;
 
   constructor(options?: {
     auditLogger?: AuditLogger;
@@ -39,8 +50,13 @@ export class AgentExecutor {
   }) {
     this.audit = options?.auditLogger ?? new AuditLogger();
     this.metrics = options?.metricsRecorder ?? new MetricsRecorder();
+    this.cognitiveMetrics = new MetricsRecorder();
     this.selfHeal = options?.selfHeal;
     this.debug = options?.debug ?? isDebugEnabled();
+    const graph = new KnowledgeGraph({ audit: this.audit, metrics: this.cognitiveMetrics });
+    const memory = new MemoryStore({ audit: this.audit, metrics: this.cognitiveMetrics });
+    const reasoning = new ReasoningEngine(graph, memory, { audit: this.audit, metrics: this.cognitiveMetrics });
+    this.runtimeContext = { graph, memory, reasoning };
     const transformerConfig = options?.transformers ?? DEFAULT_TRANSFORMERS;
     Object.entries(transformerConfig).forEach(([agentName, transformer]) => this.registerTransformer(agentName, transformer));
   }
@@ -81,6 +97,10 @@ export class AgentExecutor {
       throw new Error(`Agent class ${descriptor.name} not found at ${descriptor.path}`);
     }
     const instance = new AgentCtor();
+    (instance as AgentInstance & { env?: unknown }).env = {
+      ...(instance as AgentInstance & { env?: Record<string, unknown> }).env,
+      context: this.runtimeContext,
+    };
     this.agentCache.set(descriptor.name, instance);
     return instance;
   }
@@ -113,7 +133,11 @@ export class AgentExecutor {
       if (typeof callable !== "function") {
         throw new Error(`Method ${methodName} is not callable on ${agentName}`);
       }
-      const result = await (callable as (payload: unknown) => unknown).call(instance, input);
+      const result = await (callable as (payload: unknown, context?: RuntimeContext) => unknown).call(
+        instance,
+        input,
+        this.runtimeContext,
+      );
       this.metrics.recordExecution(1);
       this.audit.record(agentName, methodName, permission, { layer: descriptor.layer });
       this.logDebug(`Executed ${agentName}.${methodName}`);
@@ -175,5 +199,9 @@ export class AgentExecutor {
 
   getMetrics() {
     return this.metrics.getSnapshot();
+  }
+
+  getRuntimeContext() {
+    return this.runtimeContext;
   }
 }
