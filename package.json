@@ -13,6 +13,7 @@
     "test:executor": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testAgentExecutor.ts"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260305.1",
     "@types/node": "^20.11.30",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"

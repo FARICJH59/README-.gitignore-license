@@ -2,11 +2,12 @@ import { agentBootstrap } from "../runtime/bootstrap/agentBootstrap";
 import "../runtime/executor/dataParserAgent";
 import "../runtime/executor/fraudDetectionAgent";
 import "../runtime/executor/predictionAgent";
-import "../runtime/revenue/pricingAgent";
-import { AgentExecutor } from "../runtime/executor/engine/agentExecutor";
-import { AgentScheduler } from "../runtime/executor/engine/agentScheduler";
-import { AgentRetryManager } from "../runtime/executor/engine/agentRetryManager";
-import { AgentSelfHeal } from "../runtime/executor/engine/agentSelfHeal";
+import "../runtime/executor/pricingAgent";
+import "../runtime/executor/visionAgent";
+import { AgentExecutor } from "../runtime/executor/agentExecutor";
+import { AgentScheduler } from "../runtime/executor/agentScheduler";
+import { AgentRetryManager } from "../runtime/executor/agentRetryManager";
+import { AgentSelfHeal } from "../runtime/executor/agentSelfHeal";
 
 const RECURRING_TEST_DURATION_MS = 120;
 
@@ -24,8 +25,11 @@ async function main() {
   const prediction = await executor.run("PredictionAgent", { amount: 120, velocity: 8, locationRisk: 30 });
   console.log("PredictionAgent output:", prediction);
 
+  const vision = await executor.run("VisionAgent", { labels: ["widget", "gadget"], confidence: 0.82 });
+  console.log("VisionAgent output:", vision);
+
   const pipelineResult = await executor.executePipeline(
-    ["DataParserAgent", "FraudDetectionAgent", "PredictionAgent", "PricingAgent"],
+    ["DataParserAgent", "FraudDetectionAgent", "PredictionAgent", "PricingAgent", "VisionAgent"],
     { id: "tx-500", amount: 1200, velocity: 12, location: "remote" },
   );
   console.log("Pipeline output:", pipelineResult);
