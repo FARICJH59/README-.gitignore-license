@@ -131,25 +131,63 @@ const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
 
 const TEMPLATE_DIR = pathJoin(__dirname, "templates");
 
+function parseYaml(raw: string) {
+  const result: Record<string, unknown> = {};
+  let currentKey: string | null = null;
+  const lines = raw.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    if (trimmed.startsWith("-") && currentKey) {
+      const value = trimmed.replace(/^-+\s*/, "");
+      const arr = (result[currentKey] as string[]) ?? [];
+      arr.push(value);
+      result[currentKey] = arr;
+      continue;
+    }
+    const match = trimmed.match(/^([^:]+):\s*(.*)$/);
+    if (match) {
+      const key = match[1].trim();
+      const value = match[2].trim();
+      currentKey = key;
+      if (!value) {
+        result[key] = [];
+      } else if (value.startsWith("[") && value.endsWith("]")) {
+        try {
+          result[key] = JSON.parse(value.replace(/'/g, '"'));
+        } catch {
+          result[key] = value;
+        }
+      } else {
+        result[key] = value;
+      }
+    }
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+
 function parseTemplate(raw: string): TemplateDefinition | undefined {
   try {
     return JSON.parse(raw) as TemplateDefinition;
   } catch {
-    return undefined;
+    const yaml = parseYaml(raw);
+    return yaml as TemplateDefinition | undefined;
   }
 }
 
 export function loadTemplate(name: string): TemplateDefinition {
   const key = name.replace(/\.ya?ml$/i, "").replace(/-/g, "_");
-  const candidate = pathJoin(TEMPLATE_DIR, `${key}.yaml`);
-  try {
-    if (fsRef?.existsSync(candidate)) {
-      const raw = fsRef.readFileSync(candidate, "utf-8");
-      const parsed = parseTemplate(raw);
-      if (parsed) return parsed;
+  const candidates = [`${key}.yaml`, `${key}.yml`, `${key}.json`].map((file) => pathJoin(TEMPLATE_DIR, file));
+  for (const candidate of candidates) {
+    try {
+      if (fsRef?.existsSync(candidate)) {
+        const raw = fsRef.readFileSync(candidate, "utf-8");
+        const parsed = parseTemplate(raw);
+        if (parsed) return parsed;
+      }
+    } catch {
+      // continue to next candidate
     }
-  } catch {
-    // fall through to default map
   }
   const fallback = DEFAULT_TEMPLATES[key];
   if (fallback) return fallback;

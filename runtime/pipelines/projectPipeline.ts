@@ -27,6 +27,8 @@ export type ProjectPipelineResult = {
   buildTimeMs: number;
 };
 
+const POST_BUILD_HEARTBEAT_MS = 10; // lightweight post-build health ping
+
 export class ProjectPipeline {
   private audit: AuditLogger;
   private metrics: MetricsRecorder;
@@ -73,7 +75,7 @@ export class ProjectPipeline {
     });
 
     // Schedule a post-build heartbeat
-    this.scheduler.schedule("FrontendBuilderAgent", stack, 10);
+    this.scheduler.schedule("FrontendBuilderAgent", stack, POST_BUILD_HEARTBEAT_MS);
 
     return { intent, architecture, stack, backend, frontend, ml, devops, templateName: template.name, buildTimeMs };
   }

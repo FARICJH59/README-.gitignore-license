@@ -1,14 +1,28 @@
-{
-  "name": "smart_city",
-  "industry": "smart_city",
-  "microservices": ["traffic", "utilities", "public-safety"],
-  "dataModels": ["sensor", "event", "alert"],
-  "mlModules": ["demand-forecast", "incident-detection"],
-  "apis": ["traffic", "events", "alerts"],
-  "frontend": ["city-ops", "citizen-portal"],
-  "infrastructure": ["edge-gateway", "api-gateway", "monitoring"],
-  "database": "postgres",
-  "messageQueue": "kafka",
-  "frontendFramework": "react",
-  "backendFramework": "fastapi"
-}
+name: smart_city
+industry: smart_city
+microservices:
+  - traffic
+  - utilities
+  - public-safety
+dataModels:
+  - sensor
+  - event
+  - alert
+mlModules:
+  - demand-forecast
+  - incident-detection
+apis:
+  - traffic
+  - events
+  - alerts
+frontend:
+  - city-ops
+  - citizen-portal
+infrastructure:
+  - edge-gateway
+  - api-gateway
+  - monitoring
+database: postgres
+messageQueue: kafka
+frontendFramework: react
+backendFramework: fastapi
