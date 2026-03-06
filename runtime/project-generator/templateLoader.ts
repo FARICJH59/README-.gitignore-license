@@ -163,7 +163,7 @@ function parseYaml(raw: string) {
           result[key] = JSON.parse(value);
         } catch {
           try {
-            // attempt to handle single-quoted arrays
+            // attempt to handle single-quoted arrays (simple lists only; embedded quotes are not preserved)
             const normalized = value.replace(/'/g, '"');
             result[key] = JSON.parse(normalized);
           } catch {

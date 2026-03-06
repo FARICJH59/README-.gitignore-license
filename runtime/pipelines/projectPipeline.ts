@@ -77,7 +77,7 @@ export class ProjectPipeline {
       services: architecture.services.length,
     });
 
-    // Schedule post-build validation pings for builder agents to validate readiness
+    // Schedule post-build validation pings (lightweight replays) for builder agents to verify scheduler + builder wiring
     this.scheduler.schedule("FrontendBuilderAgent", stack, SCHEDULER_VALIDATION_DELAY_MS);
     this.scheduler.schedule("BackendBuilderAgent", stack, SCHEDULER_VALIDATION_DELAY_MS);
     this.scheduler.schedule("DevOpsBuilderAgent", stack, SCHEDULER_VALIDATION_DELAY_MS);
