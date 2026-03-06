@@ -83,8 +83,10 @@ export class ReasoningEngine {
     const visited = new Set<string>([startId]);
     const queue: { nodeId: string; path: string[] }[] = [{ nodeId: startId, path: [startId] }];
 
-    for (let cursor = 0; cursor < queue.length; cursor += 1) {
-      const { nodeId, path } = queue[cursor];
+    while (queue.length > 0) {
+      const next = queue.shift();
+      if (!next) continue;
+      const { nodeId, path } = next;
       if (path.length > maxDepth) continue;
       const neighbors = this.graph.getNeighbors(nodeId);
       for (const neighbor of neighbors) {

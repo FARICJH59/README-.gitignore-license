@@ -6,7 +6,7 @@ The cognitive runtime introduces a shared knowledge layer that every agent can u
 - **KnowledgeGraph**: Typed nodes and edges with query and neighbor traversal helpers, audited and metered.
 - **MemoryStore**: Agent-scoped in-memory log of observations and facts.
 - **ReasoningEngine**: Performs relationship discovery, rule-based inference, and path finding across the shared graph.
-- **Runtime Context**: The `AgentExecutor` now injects `context.graph`, `context.memoryStore`, and `context.reasoning` so any agent can use the shared layer.
+- **Runtime Context**: The `AgentExecutor` now injects `context.graph`, `context.memoryStore`, and `context.reasoning` so any agent can use the shared layer. The same runtime context object is available on both `agent.context` and `agent.env.context` for compatibility, but they reference the same shared instance.
 - **Telemetry & Governance**: Every cognitive operation records metrics via `MetricsRecorder` and audit events via `AuditLogger`.
 
 ## Data Flow
