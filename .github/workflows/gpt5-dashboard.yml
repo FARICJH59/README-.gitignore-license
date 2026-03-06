@@ -15,6 +15,7 @@ jobs:
       DEPLOY_REGION: us-central1
       CLOUD_RUN_PROJECTS: RUGGED-SILO-476415-P6,axiomcore-platform-642795357173
       EMAIL_ALERT: farichva@gmail.com
+      PRIMARY_GCP_PROJECT: RUGGED-SILO-476415-P6
 
     steps:
       - name: Checkout repository
@@ -86,7 +87,7 @@ jobs:
         if: steps.gcp-auth.outputs.method != 'none'
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: RUGGED-SILO-476415-P6
+          project_id: ${{ env.PRIMARY_GCP_PROJECT }}
 
       - name: Build and deploy container to Cloud Run
         if: steps.gcp-auth.outputs.method != 'none'
