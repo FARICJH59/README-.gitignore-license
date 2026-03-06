@@ -24,7 +24,14 @@ export class ReasoningEngine {
     const neighbors = this.graph.getNeighbors(nodeId);
     const relatedEdges = this.graph.query({ nodeId }).edges;
     const edgeLookup = relatedEdges.reduce<Map<string, Edge[]>>((acc, edge) => {
-      const partner = edge.from === nodeId ? edge.to : edge.to === nodeId ? edge.from : undefined;
+      let partner: string | undefined;
+      if (edge.from === nodeId) {
+        partner = edge.to;
+      } else if (edge.to === nodeId) {
+        partner = edge.from;
+      } else {
+        partner = undefined;
+      }
       if (!partner) return acc;
       const list = acc.get(partner) ?? [];
       acc.set(partner, [...list, edge]);
