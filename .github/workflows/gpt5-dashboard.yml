@@ -12,9 +12,11 @@ jobs:
   build-deploy-monitor:
     runs-on: ubuntu-latest
     env:
-      DEPLOY_REGION: us-central1
-      CLOUD_RUN_PROJECTS: RUGGED-SILO-476415-P6,axiomcore-platform-642795357173
-      EMAIL_ALERT: farichva@gmail.com
+      # Configure deploy targets through repository variables to avoid hard-coding project IDs.
+      DEPLOY_REGION: ${{ vars.DEPLOY_REGION || 'us-central1' }}
+      CLOUD_RUN_PROJECTS: ${{ vars.CLOUD_RUN_PROJECTS }}
+      EMAIL_ALERT: ${{ vars.EMAIL_ALERT || 'farichva@gmail.com' }}
+      PRIMARY_GCP_PROJECT: ${{ vars.PRIMARY_GCP_PROJECT }}
 
     steps:
       - name: Checkout repository
@@ -46,20 +48,62 @@ jobs:
       - name: Quick backend sanity check
         run: python -m compileall backend # Fast validation to catch syntax errors early
 
+      - name: Determine Google Cloud auth method
+        id: gcp-auth
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          GCP_WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          CLOUD_RUN_PROJECTS: ${{ env.CLOUD_RUN_PROJECTS }}
+          PRIMARY_GCP_PROJECT: ${{ env.PRIMARY_GCP_PROJECT }}
+        run: |
+          if [[ -z "${CLOUD_RUN_PROJECTS}" || -z "${PRIMARY_GCP_PROJECT}" ]]; then
+            echo "method=none" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Google Cloud project IDs configured; deployment steps will be skipped."
+            exit 0
+          fi
+          IFS=',' read -ra projects <<< "${CLOUD_RUN_PROJECTS}"
+          for idx in "${!projects[@]}"; do
+            project="${projects[$idx]}"
+            if [[ -z "${project}" ]]; then
+              echo "method=none" >> "$GITHUB_OUTPUT"
+              echo "::notice::Cloud Run project list contains an empty entry at position $((idx+1)); deployment steps will be skipped."
+              exit 0
+            fi
+          done
+          if [[ -n "${GCP_SA_KEY}" ]]; then
+            echo "method=sa-key" >> "$GITHUB_OUTPUT"
+          elif [[ -n "${GCP_WIF_PROVIDER}" && -n "${GCP_SERVICE_ACCOUNT}" ]]; then
+            echo "method=wif" >> "$GITHUB_OUTPUT"
+          else
+            echo "method=none" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Google Cloud credentials configured; deployment steps will be skipped."
+          fi
+
       - name: Build Docker image (multi-stage)
         run: docker build -t gpt5-dashboard:${{ github.sha }} -f backend/Dockerfile .
 
-      - name: Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud (service account key)
+        if: steps.gcp-auth.outputs.method == 'sa-key'
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+      - name: Authenticate to Google Cloud (workload identity)
+        if: steps.gcp-auth.outputs.method == 'wif'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
       - name: Setup gcloud CLI
+        if: steps.gcp-auth.outputs.method != 'none'
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: RUGGED-SILO-476415-P6
+          project_id: ${{ env.PRIMARY_GCP_PROJECT }}
 
       - name: Build and deploy container to Cloud Run
+        if: steps.gcp-auth.outputs.method != 'none'
         env:
           CLOUD_RUN_SERVICE: gpt5-dashboard
         run: |
@@ -87,6 +131,7 @@ jobs:
           directory: frontend/dist
 
       - name: Run Cloud Run health monitor
+        if: steps.gcp-auth.outputs.method != 'none'
         env:
           CLOUD_RUN_PROJECTS: ${{ env.CLOUD_RUN_PROJECTS }}
           DEPLOY_REGION: ${{ env.DEPLOY_REGION }}
@@ -95,6 +140,7 @@ jobs:
           python backend/scripts/monitor.py
 
       - name: Collect usage and billing metrics
+        if: steps.gcp-auth.outputs.method != 'none'
         env:
           CLOUD_RUN_PROJECTS: ${{ env.CLOUD_RUN_PROJECTS }}
           DEPLOY_REGION: ${{ env.DEPLOY_REGION }}
@@ -103,12 +149,14 @@ jobs:
           python backend/scripts/collect_metrics.py
 
       - name: Upload metrics artifact
+        if: steps.gcp-auth.outputs.method != 'none'
         uses: actions/upload-artifact@v4
         with:
           name: metrics-json
           path: backend/scripts/metrics.json
 
       - name: Send daily email alert with metrics
+        if: steps.gcp-auth.outputs.method != 'none'
         env:
           ALERT_EMAIL_USER: ${{ secrets.ALERT_EMAIL_USER }}
           ALERT_EMAIL_PASS: ${{ secrets.ALERT_EMAIL_PASS }}
