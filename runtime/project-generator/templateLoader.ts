@@ -134,7 +134,7 @@ const TEMPLATE_DIR = pathJoin(__dirname, "templates");
 /**
  * Minimal YAML helper to avoid additional dependencies in worker-friendly environments.
  * Supported: top-level key/value pairs, simple string lists, and inline JSON arrays.
- * Unsupported: nested maps, multi-line strings, anchors, complex types, and nested objects.
+ * Unsupported: nested maps/structures, multi-line strings, anchors, complex types.
  */
 function parseYaml(raw: string) {
   const result: Record<string, unknown> = {};
