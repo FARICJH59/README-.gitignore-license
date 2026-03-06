@@ -79,10 +79,6 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-      - name: Skip deploy due to missing Google Cloud credentials
-        if: steps.gcp-auth.outputs.method == 'none'
-        run: echo "Skipping deploy because no GCP credentials are available in this environment."
-
       - name: Setup gcloud CLI
         if: steps.gcp-auth.outputs.method != 'none'
         uses: google-github-actions/setup-gcloud@v2
