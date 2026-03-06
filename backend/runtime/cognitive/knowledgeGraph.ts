@@ -97,10 +97,7 @@ export class KnowledgeGraph {
 
         if (direction === "incoming" && !matchesIncoming) return false;
         if (direction === "outgoing" && !matchesOutgoing) return false;
-        if (direction === "any") {
-          const matchesAny = matchesIncoming || matchesOutgoing;
-          if (!matchesAny) return false;
-        }
+        if (direction === "any" && !matchesIncoming && !matchesOutgoing) return false;
       }
       if (query.nodeId) {
         return edge.from === query.nodeId || edge.to === query.nodeId;

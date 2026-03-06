@@ -29,8 +29,6 @@ export class ReasoningEngine {
         partner = edge.to;
       } else if (edge.to === nodeId) {
         partner = edge.from;
-      } else {
-        partner = undefined;
       }
       if (!partner) return acc;
       const list = acc.get(partner) ?? [];
@@ -73,6 +71,13 @@ export class ReasoningEngine {
     return additions;
   }
 
+  /**
+   * Breadth-first search between two nodes.
+   * @param startId Starting node identifier.
+   * @param targetId Destination node identifier.
+   * @param maxDepth Optional search depth limit (default: 5). Paths longer than this are skipped.
+   * @returns Ordered node ids representing the path, or an empty array when no path is found.
+   */
   findPath(startId: string, targetId: string, maxDepth = 5) {
     if (startId === targetId) return [startId];
     const visited = new Set<string>([startId]);
