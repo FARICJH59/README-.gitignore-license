@@ -23,9 +23,16 @@ export class ReasoningEngine {
   findRelationships(nodeId: string) {
     const neighbors = this.graph.getNeighbors(nodeId);
     const relatedEdges = this.graph.query({ nodeId }).edges;
+    const edgeLookup = relatedEdges.reduce<Map<string, Edge[]>>((acc, edge) => {
+      const partner = edge.from === nodeId ? edge.to : edge.to === nodeId ? edge.from : undefined;
+      if (!partner) return acc;
+      const list = acc.get(partner) ?? [];
+      acc.set(partner, [...list, edge]);
+      return acc;
+    }, new Map());
     const connections = neighbors.map((neighbor) => ({
       neighbor,
-      edges: relatedEdges.filter((edge) => edge.from === neighbor.id || edge.to === neighbor.id),
+      edges: edgeLookup.get(neighbor.id) ?? [],
     }));
     this.audit.record(REASONER_AGENT, "findRelationships", "read", { nodeId, neighborCount: neighbors.length });
     this.metrics.recordExecution(1);
@@ -52,7 +59,10 @@ export class ReasoningEngine {
         });
       }
     }
-    this.metrics.recordExecution(additions.length || 1);
+    this.metrics.recordExecution(additions.length);
+    if (additions.length === 0) {
+      this.audit.record(REASONER_AGENT, "infer:no-additions", "read", { evaluatedRules: rules.length });
+    }
     return additions;
   }
 

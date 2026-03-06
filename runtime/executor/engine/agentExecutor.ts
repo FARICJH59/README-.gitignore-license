@@ -100,8 +100,8 @@ export class AgentExecutor {
       throw new Error(`Agent class ${descriptor.name} not found at ${descriptor.path}`);
     }
     const instance = new AgentCtor();
+    instance.context = this.runtimeContext;
     instance.env = { ...(instance.env as Record<string, unknown>), context: this.runtimeContext };
-    instance.context = (instance.env as { context?: CognitiveRuntimeContext }).context;
     this.agentCache.set(descriptor.name, instance);
     return instance;
   }

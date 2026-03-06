@@ -1,9 +1,11 @@
-export type AgentInit<TState = unknown> = { state?: TState; env?: unknown };
+export type AgentContext = unknown;
+export type AgentEnv = { context?: AgentContext } & Record<string, unknown>;
+export type AgentInit<TState = unknown> = { state?: TState; env?: AgentEnv };
 
 export class Agent<TState = unknown> {
   state: TState;
-  env: unknown;
-  context?: unknown;
+  env: AgentEnv;
+  context?: AgentContext;
 
   constructor(init?: AgentInit<TState>) {
     const hasInitialState = (value: unknown): value is { initialState: TState } =>
@@ -15,8 +17,8 @@ export class Agent<TState = unknown> {
     } else {
       this.state = {} as TState;
     }
-    this.env = init?.env;
-    this.context = (init?.env as { context?: unknown })?.context;
+    this.env = init?.env ?? {};
+    this.context = init?.env?.context;
   }
 
   setState(next: TState) {
