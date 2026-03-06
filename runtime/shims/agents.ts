@@ -1,4 +1,13 @@
-export type AgentContext = unknown;
+import type { KnowledgeGraph } from "../../backend/runtime/cognitive/knowledgeGraph";
+import type { MemoryStore } from "../../backend/runtime/cognitive/memoryStore";
+import type { ReasoningEngine } from "../../backend/runtime/cognitive/reasoningEngine";
+
+export type AgentContext = {
+  graph?: KnowledgeGraph;
+  memoryStore?: MemoryStore;
+  reasoning?: ReasoningEngine;
+  [key: string]: unknown;
+};
 export type AgentEnv = { context?: AgentContext } & Record<string, unknown>;
 export type AgentInit<TState = unknown> = { state?: TState; env?: AgentEnv };
 
