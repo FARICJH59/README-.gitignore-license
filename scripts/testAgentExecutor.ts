@@ -35,7 +35,6 @@ async function main() {
   runtimeContext.graph.addNode({ id: "account:1", type: "account", attributes: { balance: 1200 } });
   runtimeContext.graph.addEdge({ from: "customer:1", to: "account:1", relation: "owns" });
   runtimeContext.memoryStore.saveMemory("FraudDetectionAgent", {
-    timestamp: Date.now(),
     data: { lastCheck: "account:1" },
     relatedNodeIds: ["account:1"],
   });

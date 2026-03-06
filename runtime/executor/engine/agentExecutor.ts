@@ -103,7 +103,7 @@ export class AgentExecutor {
     // Provides shared cognitive context on both the instance and env for agents that consume either surface.
     const context = this.runtimeContext;
     instance.context = context;
-    instance.env = { ...(instance.env as Record<string, unknown>), context };
+    instance.env = { ...instance.env, context };
     this.agentCache.set(descriptor.name, instance);
     return instance;
   }
