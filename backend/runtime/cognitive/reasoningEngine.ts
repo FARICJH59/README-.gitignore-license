@@ -100,7 +100,7 @@ export class ReasoningEngine {
       }
     }
     this.audit.record(REASONER_AGENT, "findPath:not-found", "read", { startId, targetId });
-    this.metrics.recordError(1);
+    this.metrics.recordExecution(1);
     return [];
   }
 }
