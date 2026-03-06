@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DEPLOY_REGION: us-central1
-      CLOUD_RUN_PROJECTS: RUGGED-SILO-476415-P6,axiomcore-platform-642795357173
+      CLOUD_RUN_PROJECTS: ${{ vars.CLOUD_RUN_PROJECTS || 'RUGGED-SILO-476415-P6,axiomcore-platform-642795357173' }}
       EMAIL_ALERT: farichva@gmail.com
-      PRIMARY_GCP_PROJECT: RUGGED-SILO-476415-P6
+      PRIMARY_GCP_PROJECT: ${{ vars.PRIMARY_GCP_PROJECT || 'RUGGED-SILO-476415-P6' }}
 
     steps:
       - name: Checkout repository
