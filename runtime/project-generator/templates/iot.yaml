@@ -1,0 +1,26 @@
+name: iot
+industry: iot
+microservices:
+  - device
+  - ingest
+  - rules-engine
+dataModels:
+  - device
+  - telemetry
+  - rule
+mlModules:
+  - anomaly-detection
+apis:
+  - device-management
+  - rules
+frontend:
+  - console
+  - analytics
+infrastructure:
+  - mqtt-broker
+  - api-gateway
+  - storage
+database: timeseries
+messageQueue: mqtt
+frontendFramework: react
+backendFramework: node

@@ -1,10 +1,48 @@
-export type LayerName = "bootstrap" | "executor" | "mesh" | "evolution" | "marketplace" | "revenue" | "governance";
+export type LayerName =
+  | "bootstrap"
+  | "executor"
+  | "mesh"
+  | "evolution"
+  | "marketplace"
+  | "revenue"
+  | "governance"
+  | "project-generator";
 
-export type Capability = "analyzeTransactions" | "flagSuspicious" | "parseData" | "execute" | "schedule" | "retry" | "selfHeal";
+export type Capability =
+  | "analyzeTransactions"
+  | "flagSuspicious"
+  | "parseData"
+  | "execute"
+  | "schedule"
+  | "retry"
+  | "selfHeal"
+  | "parseIntent"
+  | "designArchitecture"
+  | "selectStack"
+  | "buildBackend"
+  | "buildFrontend"
+  | "buildML"
+  | "buildDevOps";
 
 export type Permission = "read" | "write" | "alert";
-export const ALL_LAYERS: LayerName[] = ["bootstrap", "executor", "mesh", "evolution", "marketplace", "revenue", "governance"];
-export const BOOTSTRAP_LAYER_WHITELIST: LayerName[] = ["bootstrap", "executor", "mesh", "evolution", "revenue"];
+export const ALL_LAYERS: LayerName[] = [
+  "bootstrap",
+  "executor",
+  "mesh",
+  "evolution",
+  "marketplace",
+  "revenue",
+  "governance",
+  "project-generator",
+];
+export const BOOTSTRAP_LAYER_WHITELIST: LayerName[] = [
+  "bootstrap",
+  "executor",
+  "mesh",
+  "evolution",
+  "revenue",
+  "project-generator",
+];
 
 export interface AgentDescriptor {
   name: string;

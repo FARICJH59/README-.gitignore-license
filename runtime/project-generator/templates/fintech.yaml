@@ -1,0 +1,29 @@
+name: fintech
+industry: fintech
+microservices:
+  - payments
+  - kyc
+  - ledger
+dataModels:
+  - customer
+  - transaction
+  - account
+mlModules:
+  - fraud
+  - risk-scoring
+apis:
+  - transactions
+  - kyc
+  - payouts
+frontend:
+  - dashboard
+  - onboarding
+  - payments
+infrastructure:
+  - api-gateway
+  - monitoring
+  - iam
+database: postgres
+messageQueue: kafka
+frontendFramework: react
+backendFramework: fastapi

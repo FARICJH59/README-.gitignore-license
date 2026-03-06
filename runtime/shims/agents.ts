@@ -1,8 +1,20 @@
-export type AgentInit<TState = unknown> = { state?: TState; env?: unknown };
+import type { KnowledgeGraph } from "../../backend/runtime/cognitive/knowledgeGraph";
+import type { MemoryStore } from "../../backend/runtime/cognitive/memoryStore";
+import type { ReasoningEngine } from "../../backend/runtime/cognitive/reasoningEngine";
+
+export type AgentContext = {
+  graph?: KnowledgeGraph;
+  memoryStore?: MemoryStore;
+  reasoning?: ReasoningEngine;
+  [key: string]: unknown;
+};
+export type AgentEnv = { context?: AgentContext } & Record<string, unknown>;
+export type AgentInit<TState = unknown> = { state?: TState; env?: AgentEnv };
 
 export class Agent<TState = unknown> {
   state: TState;
-  env: unknown;
+  env: AgentEnv;
+  context?: AgentContext;
 
   constructor(init?: AgentInit<TState>) {
     const hasInitialState = (value: unknown): value is { initialState: TState } =>
@@ -14,7 +26,8 @@ export class Agent<TState = unknown> {
     } else {
       this.state = {} as TState;
     }
-    this.env = init?.env;
+    this.env = { ...(init?.env ?? {}) };
+    this.context = init?.env?.context;
   }
 
   setState(next: TState) {

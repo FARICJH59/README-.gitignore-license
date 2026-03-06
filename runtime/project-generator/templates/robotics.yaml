@@ -1,0 +1,26 @@
+name: robotics
+industry: robotics
+microservices:
+  - fleet
+  - telemetry
+  - control
+dataModels:
+  - robot
+  - mission
+  - telemetry
+mlModules:
+  - navigation
+  - anomaly-detection
+apis:
+  - fleet-control
+  - mission-planning
+frontend:
+  - operations-console
+infrastructure:
+  - mqtt-broker
+  - api-gateway
+  - edge-cache
+database: timeseries
+messageQueue: mqtt
+frontendFramework: react
+backendFramework: rust

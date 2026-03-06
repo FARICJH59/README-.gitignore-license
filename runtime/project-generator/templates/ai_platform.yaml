@@ -1,0 +1,28 @@
+name: ai_platform
+industry: ai_platform
+microservices:
+  - model-registry
+  - training
+  - inference
+dataModels:
+  - dataset
+  - model
+  - deployment
+mlModules:
+  - auto-ml
+  - monitoring
+apis:
+  - training
+  - inference
+  - dataset
+frontend:
+  - console
+  - notebooks
+infrastructure:
+  - feature-store
+  - api-gateway
+  - observability
+database: postgres
+messageQueue: kafka
+frontendFramework: react
+backendFramework: fastapi
