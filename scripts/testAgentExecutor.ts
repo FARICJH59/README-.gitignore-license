@@ -30,6 +30,20 @@ async function main() {
   );
   console.log("Pipeline output:", pipelineResult);
 
+  const cognitive = executor.getRuntimeContext();
+  cognitive.graph.addNode({ id: "customer:1", type: "entity", attributes: { segment: "gold" } });
+  cognitive.graph.addNode({ id: "account:1", type: "account", attributes: { balance: 1200 } });
+  cognitive.graph.addEdge({ from: "customer:1", to: "account:1", relation: "owns" });
+  cognitive.memoryStore.saveMemory("FraudDetectionAgent", {
+    timestamp: Date.now(),
+    data: { lastCheck: "account:1" },
+    relatedNodeIds: ["account:1"],
+  });
+  const knowledge = cognitive.graph.query({ neighborOf: "customer:1" });
+  const path = cognitive.reasoning.findPath("customer:1", "account:1");
+  console.log("Cognitive graph neighbors:", knowledge.neighbors);
+  console.log("Cognitive path:", path);
+
   try {
     // Intentionally pass an invalid input to demonstrate retry and self-heal behavior.
     await retryManager.retry("FraudDetectionAgent", undefined, 2);

@@ -4,8 +4,21 @@ import { AuditLogger } from "../../governance/auditLogger";
 import { MetricsRecorder } from "../../telemetry/metricsRecorder";
 import { AgentDescriptor, Capability, Permission } from "../../types";
 import { AgentSelfHeal } from "./agentSelfHeal";
+import { KnowledgeGraph } from "../../../backend/runtime/cognitive/knowledgeGraph";
+import { MemoryStore } from "../../../backend/runtime/cognitive/memoryStore";
+import { ReasoningEngine } from "../../../backend/runtime/cognitive/reasoningEngine";
 
-type AgentInstance = Agent & { capabilities?: Capability[]; permissions?: Permission[] };
+type AgentInstance = Agent & {
+  capabilities?: Capability[];
+  permissions?: Permission[];
+  context?: CognitiveRuntimeContext;
+};
+
+type CognitiveRuntimeContext = {
+  graph: KnowledgeGraph;
+  memoryStore: MemoryStore;
+  reasoning: ReasoningEngine;
+};
 
 const isDebugEnabled = () =>
   (typeof process !== "undefined" && process.env?.DEBUG_BOOTSTRAP === "true") ||
@@ -29,6 +42,7 @@ export class AgentExecutor {
   private debug: boolean;
   private agentCache = new Map<string, AgentInstance>();
   private transformers = new Map<string, (value: unknown) => unknown>();
+  private runtimeContext: CognitiveRuntimeContext;
 
   constructor(options?: {
     auditLogger?: AuditLogger;
@@ -36,11 +50,16 @@ export class AgentExecutor {
     selfHeal?: AgentSelfHeal;
     debug?: boolean;
     transformers?: Record<string, (value: unknown) => unknown>;
+    cognitiveContext?: Partial<CognitiveRuntimeContext>;
   }) {
     this.audit = options?.auditLogger ?? new AuditLogger();
     this.metrics = options?.metricsRecorder ?? new MetricsRecorder();
     this.selfHeal = options?.selfHeal;
     this.debug = options?.debug ?? isDebugEnabled();
+    const graph = options?.cognitiveContext?.graph ?? new KnowledgeGraph();
+    const memoryStore = options?.cognitiveContext?.memoryStore ?? new MemoryStore();
+    const reasoning = options?.cognitiveContext?.reasoning ?? new ReasoningEngine(graph);
+    this.runtimeContext = { graph, memoryStore, reasoning };
     const transformerConfig = options?.transformers ?? DEFAULT_TRANSFORMERS;
     Object.entries(transformerConfig).forEach(([agentName, transformer]) => this.registerTransformer(agentName, transformer));
   }
@@ -81,6 +100,8 @@ export class AgentExecutor {
       throw new Error(`Agent class ${descriptor.name} not found at ${descriptor.path}`);
     }
     const instance = new AgentCtor();
+    instance.context = this.runtimeContext;
+    instance.env = { ...(instance.env as Record<string, unknown>), context: this.runtimeContext };
     this.agentCache.set(descriptor.name, instance);
     return instance;
   }
@@ -113,7 +134,11 @@ export class AgentExecutor {
       if (typeof callable !== "function") {
         throw new Error(`Method ${methodName} is not callable on ${agentName}`);
       }
-      const result = await (callable as (payload: unknown) => unknown).call(instance, input);
+      const result = await (callable as (payload: unknown, context?: CognitiveRuntimeContext) => unknown).call(
+        instance,
+        input,
+        this.runtimeContext,
+      );
       this.metrics.recordExecution(1);
       this.audit.record(agentName, methodName, permission, { layer: descriptor.layer });
       this.logDebug(`Executed ${agentName}.${methodName}`);
@@ -162,6 +187,10 @@ export class AgentExecutor {
 
   registerTransformer(agentName: string, transformer: (value: unknown) => unknown) {
     this.transformers.set(agentName, transformer);
+  }
+
+  getRuntimeContext() {
+    return this.runtimeContext;
   }
 
   async restartAgent(agentName: string) {
