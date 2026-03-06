@@ -3,6 +3,7 @@ import { MetricsRecorder } from "../../../runtime/telemetry/metricsRecorder";
 import { Edge, Node } from "./graphTypes";
 import { KnowledgeGraph } from "./knowledgeGraph";
 import { MemoryStore } from "./memoryStore";
+import { generateStableId } from "./idUtils";
 
 type Path = string[];
 
@@ -28,6 +29,10 @@ export class ReasoningEngine {
     return { node, neighbors, edges };
   }
 
+  /**
+   * Finds two-hop associations that match the provided relation and creates transitive `inferred` edges.
+   * Example: seed --relation--> neighbor --relation--> target becomes seed --inferred--> target.
+   */
   inferAssociations(seedId: string, relation = "related") {
     const seedEdges = this.graph.getEdges().filter((edge) => edge.from === seedId && edge.relation === relation);
     const inferred: Edge[] = [];
@@ -77,8 +82,7 @@ export class ReasoningEngine {
   }
 
   remember(agentId: string, data: unknown, relatedNode?: string) {
-    const entryId =
-      typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `mem-${Date.now()}-${Math.random()}`;
+    const entryId = generateStableId("mem");
     const entry = {
       id: entryId,
       agentId,

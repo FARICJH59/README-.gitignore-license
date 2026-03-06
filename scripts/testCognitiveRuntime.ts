@@ -1,4 +1,4 @@
-import { AgentExecutor } from "../runtime/executor/agentExecutor";
+import { AgentExecutor } from "../runtime/executor/engine/agentExecutor";
 import { KnowledgeGraph } from "../backend/runtime/cognitive/knowledgeGraph";
 import { MemoryStore } from "../backend/runtime/cognitive/memoryStore";
 import { ReasoningEngine } from "../backend/runtime/cognitive/reasoningEngine";

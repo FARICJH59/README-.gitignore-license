@@ -17,7 +17,7 @@ flowchart LR
 ## Usage Patterns
 - Add or update knowledge: `context.graph.addNode({...})`, `context.graph.addEdge({...})`
 - Ask questions: `context.graph.query({...})`, `context.graph.getNeighbors(nodeId)`
-- Reasoning and inference: `context.reasoning.findRelationships(nodeId)`, `context.reasoning.findPath(a, b)`, `context.reasoning.inferAssociations(seedId)`
+- Reasoning and inference: `context.reasoning.findRelationships(nodeId)`, `context.reasoning.findPath(a, b)`, `context.reasoning.inferAssociations(seedId, relation?)`
 - Persist agent memory: `context.memory.saveMemory(agentId, entry)`
 
 All operations emit governance logs through `AuditLogger` and metrics via `MetricsRecorder` for observability.

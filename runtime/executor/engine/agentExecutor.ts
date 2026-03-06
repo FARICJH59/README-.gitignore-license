@@ -9,6 +9,7 @@ import { MemoryStore } from "../../../backend/runtime/cognitive/memoryStore";
 import { ReasoningEngine } from "../../../backend/runtime/cognitive/reasoningEngine";
 
 type AgentInstance = Agent & { capabilities?: Capability[]; permissions?: Permission[] };
+type AgentContextCarrier = { env?: Record<string, unknown> };
 
 type RuntimeContext = {
   graph: KnowledgeGraph;
@@ -50,6 +51,7 @@ export class AgentExecutor {
   }) {
     this.audit = options?.auditLogger ?? new AuditLogger();
     this.metrics = options?.metricsRecorder ?? new MetricsRecorder();
+    // Track cognitive runtime operations separately from executor lifecycle metrics.
     this.cognitiveMetrics = new MetricsRecorder();
     this.selfHeal = options?.selfHeal;
     this.debug = options?.debug ?? isDebugEnabled();
@@ -84,6 +86,12 @@ export class AgentExecutor {
     return descriptor;
   }
 
+  private attachRuntimeContext(agent: AgentInstance) {
+    const carrier = agent as AgentContextCarrier;
+    const currentEnv = carrier.env && typeof carrier.env === "object" ? carrier.env : {};
+    carrier.env = { ...currentEnv, context: this.runtimeContext };
+  }
+
   private toModulePath(descriptor: AgentDescriptor) {
     const normalized = descriptor.path.replace(/^runtime\//, "");
     return `../../${normalized.replace(/\.ts$/, "")}`;
@@ -97,10 +105,8 @@ export class AgentExecutor {
       throw new Error(`Agent class ${descriptor.name} not found at ${descriptor.path}`);
     }
     const instance = new AgentCtor();
-    (instance as AgentInstance & { env?: unknown }).env = {
-      ...(instance as AgentInstance & { env?: Record<string, unknown> }).env,
-      context: this.runtimeContext,
-    };
+    // The Agent base class exposes an env slot; attach runtime context to it so agents can opt-in to graph access.
+    this.attachRuntimeContext(instance);
     this.agentCache.set(descriptor.name, instance);
     return instance;
   }
@@ -133,11 +139,7 @@ export class AgentExecutor {
       if (typeof callable !== "function") {
         throw new Error(`Method ${methodName} is not callable on ${agentName}`);
       }
-      const result = await (callable as (payload: unknown, context?: RuntimeContext) => unknown).call(
-        instance,
-        input,
-        this.runtimeContext,
-      );
+      const result = await (callable as (payload: unknown) => unknown).call(instance, input);
       this.metrics.recordExecution(1);
       this.audit.record(agentName, methodName, permission, { layer: descriptor.layer });
       this.logDebug(`Executed ${agentName}.${methodName}`);
@@ -199,6 +201,10 @@ export class AgentExecutor {
 
   getMetrics() {
     return this.metrics.getSnapshot();
+  }
+
+  getCognitiveMetrics() {
+    return this.cognitiveMetrics.getSnapshot();
   }
 
   getRuntimeContext() {
