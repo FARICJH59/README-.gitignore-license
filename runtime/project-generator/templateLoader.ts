@@ -138,8 +138,8 @@ function parseYaml(raw: string) {
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
-    if (trimmed.startsWith("-") && currentKey) {
-      const value = trimmed.replace(/^-+\s*/, "");
+    if (/^-\s*/.test(trimmed) && currentKey) {
+      const value = trimmed.replace(/^-\s*/, "");
       const arr = (result[currentKey] as string[]) ?? [];
       arr.push(value);
       result[currentKey] = arr;
@@ -154,9 +154,15 @@ function parseYaml(raw: string) {
         result[key] = [];
       } else if (value.startsWith("[") && value.endsWith("]")) {
         try {
-          result[key] = JSON.parse(value.replace(/'/g, '"'));
+          result[key] = JSON.parse(value);
         } catch {
-          result[key] = value;
+          try {
+            // attempt to handle single-quoted arrays
+            const normalized = value.replace(/'/g, '"');
+            result[key] = JSON.parse(normalized);
+          } catch {
+            result[key] = value;
+          }
         }
       } else {
         result[key] = value;

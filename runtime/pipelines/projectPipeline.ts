@@ -27,16 +27,17 @@ export type ProjectPipelineResult = {
   buildTimeMs: number;
 };
 
-// Lightweight post-build health pings to validate scheduler wiring without blocking the caller.
-const POST_BUILD_HEARTBEAT_MS = 10;
+// Lightweight post-build health pings to validate scheduler wiring without blocking the caller; short delay keeps tests fast.
+const POST_BUILD_HEARTBEAT_DELAY_MS = 10;
 
 export class ProjectPipeline {
   private audit: AuditLogger;
   private metrics: MetricsRecorder;
   private retry: AgentRetryManager;
   private scheduler: AgentScheduler;
+  private executor: AgentExecutor;
 
-  constructor(private executor?: AgentExecutor, options?: { auditLogger?: AuditLogger; metricsRecorder?: MetricsRecorder }) {
+  constructor(executor?: AgentExecutor, options?: { auditLogger?: AuditLogger; metricsRecorder?: MetricsRecorder }) {
     const audit = options?.auditLogger ?? new AuditLogger();
     const metrics = options?.metricsRecorder ?? new MetricsRecorder();
     const selfHeal = new AgentSelfHeal({ auditLogger: audit, metricsRecorder: metrics });
@@ -51,21 +52,21 @@ export class ProjectPipeline {
     const start = Date.now();
     const template = loadTemplate(templateName);
 
-    const intent = (await this.executor!.run("IntentAgent", request)) as ProjectIntent;
+    const intent = (await this.executor.run("IntentAgent", request)) as ProjectIntent;
     intent.template = template;
 
-    const architecture = (await this.executor!.run("ArchitectAgent", intent)) as ArchitecturePlan;
+    const architecture = (await this.executor.run("ArchitectAgent", intent)) as ArchitecturePlan;
 
-    const stack = (await this.executor!.run("StackAgent", {
+    const stack = (await this.executor.run("StackAgent", {
       intent,
       architecture,
       template,
     })) as StackSelection;
 
     const backend = (await this.retry.retry("BackendBuilderAgent", stack, 1)) as BuilderOutput;
-    const frontend = (await this.executor!.run("FrontendBuilderAgent", stack)) as BuilderOutput;
-    const ml = (await this.executor!.run("MLBuilderAgent", stack)) as BuilderOutput;
-    const devops = (await this.executor!.run("DevOpsBuilderAgent", stack)) as BuilderOutput;
+    const frontend = (await this.executor.run("FrontendBuilderAgent", stack)) as BuilderOutput;
+    const ml = (await this.executor.run("MLBuilderAgent", stack)) as BuilderOutput;
+    const devops = (await this.executor.run("DevOpsBuilderAgent", stack)) as BuilderOutput;
 
     const buildTimeMs = Date.now() - start;
     this.metrics.recordExecution(1);
@@ -76,9 +77,9 @@ export class ProjectPipeline {
     });
 
     // Schedule post-build heartbeats for builder agents to validate readiness
-    this.scheduler.schedule("FrontendBuilderAgent", stack, POST_BUILD_HEARTBEAT_MS);
-    this.scheduler.schedule("BackendBuilderAgent", stack, POST_BUILD_HEARTBEAT_MS);
-    this.scheduler.schedule("DevOpsBuilderAgent", stack, POST_BUILD_HEARTBEAT_MS);
+    this.scheduler.schedule("FrontendBuilderAgent", stack, POST_BUILD_HEARTBEAT_DELAY_MS);
+    this.scheduler.schedule("BackendBuilderAgent", stack, POST_BUILD_HEARTBEAT_DELAY_MS);
+    this.scheduler.schedule("DevOpsBuilderAgent", stack, POST_BUILD_HEARTBEAT_DELAY_MS);
 
     return { intent, architecture, stack, backend, frontend, ml, devops, templateName: template.name, buildTimeMs };
   }

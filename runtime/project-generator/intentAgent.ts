@@ -9,6 +9,7 @@ import { ProjectIntent } from "./types";
 type IntentState = { lastIntent?: ProjectIntent };
 
 const AGENT_NAME = "IntentAgent";
+const DEFAULT_INDUSTRY = "saas";
 
 export class IntentAgent extends Agent<IntentState> {
   readonly capabilities: Capability[] = ["parseIntent"];
@@ -36,7 +37,7 @@ export class IntentAgent extends Agent<IntentState> {
     if (lower.includes("iot")) return "iot";
     if (lower.includes("city")) return "smart_city";
     if (lower.includes("saas")) return "saas";
-    return "saas";
+    return DEFAULT_INDUSTRY;
   }
 
   @callable()
