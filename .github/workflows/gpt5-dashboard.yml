@@ -109,7 +109,6 @@ jobs:
           done
 
       - name: Deploy frontend to Cloudflare Pages
-        if: steps.gcp-auth.outputs.method != 'none'
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
