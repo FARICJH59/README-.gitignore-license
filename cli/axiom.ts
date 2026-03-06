@@ -11,7 +11,7 @@ async function main() {
   }
   if (command !== "build") {
     console.error(`Unknown command: ${command}`);
-    console.log(`Available templates: ${listTemplates().join(", ")}`);
+    console.log("Available commands: build");
     process.exit(1);
   }
   if (!templateArg) {
