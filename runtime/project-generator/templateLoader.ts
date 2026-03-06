@@ -131,9 +131,11 @@ const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
 
 const TEMPLATE_DIR = pathJoin(__dirname, "templates");
 
-// Minimal YAML helper to avoid additional dependencies in worker-friendly environments.
-// Supports: top-level key/value pairs, simple string lists, and inline JSON arrays.
-// Unsupported: nested maps, multi-line strings, anchors, complex types.
+/**
+ * Minimal YAML helper to avoid additional dependencies in worker-friendly environments.
+ * Supported: top-level key/value pairs, simple string lists, and inline JSON arrays.
+ * Unsupported: nested maps, multi-line strings, anchors, complex types, and nested objects.
+ */
 function parseYaml(raw: string) {
   const result: Record<string, unknown> = {};
   let currentKey: string | null = null;
@@ -186,7 +188,10 @@ function parseTemplate(raw: string): TemplateDefinition | undefined {
     }
   }
   const yaml = parseYaml(raw);
-  return yaml as TemplateDefinition | undefined;
+  if (yaml && Object.keys(yaml).length) {
+    return yaml as TemplateDefinition;
+  }
+  return undefined;
 }
 
 export function loadTemplate(name: string): TemplateDefinition {
