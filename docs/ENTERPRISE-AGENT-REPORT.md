@@ -37,7 +37,7 @@
 - **Runbooks:** Standardize schedules via `AgentScheduler` for delayed or recurring runs; document cancel flows using returned timer ids.
 - **Config:** Honor `DEBUG_BOOTSTRAP` for verbose logs; lock down permission lists per agent to least-privilege.
 - **Quality Gates:** Maintain executor regression tests (`npm run test:executor`, `npm run test:data-parser`, `npm run test:fraud-agent`) before promotion.
-- **Telemetry Wiring:** Export `MetricsRecorder` snapshots to centralized APM and persist `AuditLogger` events for retention and SOX-style audits.
+- **Telemetry Wiring:** Export `MetricsRecorder` snapshots to centralized APM and persist `AuditLogger` events for retention and regulatory compliance audits (SOX, GDPR, HIPAA, PCI-DSS).
 
 ## 7. Market Fit
 - **Risk & Compliance:** FraudDetectionAgent + AuditLogger suit fintech, insurance, and payments pipelines requiring traceability.
@@ -56,6 +56,7 @@
 - Harden permission model with role-to-permission mapping and explicit deny lists.
 
 ## 10. Implementation Roadmap
-- **0-30 Days:** Wire metrics/audit export, add load tests around fraud/prediction stages, and document scheduler runbooks.
-- **30-60 Days:** Deliver layer validation checks, configurable retries, and centralized alerting (error rate, recovery count, latency).
-- **60-90 Days:** Add parallelizable pipeline branches where safe, integrate VisionAgent inference caches, and publish governance KPIs.
+- **0-30 Days:** Wire metrics/audit export, add load tests around fraud/prediction stages, and document scheduler runbooks with a target of 80% alert coverage on critical paths.
+- **30-60 Days:** Deliver layer validation checks, configurable retries, and centralized alerting with goals of <2% error rate on happy-path runs and MTTR under 5 minutes for executor crashes.
+- **60-90 Days:** Add parallelizable pipeline branches where safe, integrate VisionAgent inference caches, and publish governance KPIs aimed at 99.9% uptime and traceability across 100% of agent executions.
+- **Dependencies:** Centralized alerting assumes the observability exports from 0-30 days; safe parallelization relies on the layer validation and retry controls delivered in the 30-60 day phase.
