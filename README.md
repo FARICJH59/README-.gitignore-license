@@ -167,3 +167,4 @@ npm run dev
 
 ### Additional Documentation
 - [Agent System Overview](docs/AGENT-SYSTEM-OVERVIEW.md): high-level architecture, agents, governance, and scalability guidance.
+- [AxiomCore Enterprise System Evaluation](docs/AXIOMCORE-ENTERPRISE-EVALUATION.md): architecture layers, pipeline flow, and governance components.
