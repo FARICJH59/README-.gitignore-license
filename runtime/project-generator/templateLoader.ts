@@ -131,6 +131,9 @@ const DEFAULT_TEMPLATES: Record<string, TemplateDefinition> = {
 
 const TEMPLATE_DIR = pathJoin(__dirname, "templates");
 
+// Minimal YAML helper to avoid additional dependencies in worker-friendly environments.
+// Supports: top-level key/value pairs, simple string lists, and inline JSON arrays.
+// Unsupported: nested maps, multi-line strings, anchors, complex types.
 function parseYaml(raw: string) {
   const result: Record<string, unknown> = {};
   let currentKey: string | null = null;
@@ -140,9 +143,10 @@ function parseYaml(raw: string) {
     if (!trimmed || trimmed.startsWith("#")) continue;
     if (/^-\s*/.test(trimmed) && currentKey) {
       const value = trimmed.replace(/^-\s*/, "");
-      const arr = (result[currentKey] as string[]) ?? [];
-      arr.push(value);
-      result[currentKey] = arr;
+      if (!Array.isArray(result[currentKey])) {
+        result[currentKey] = [];
+      }
+      (result[currentKey] as string[]).push(value);
       continue;
     }
     const match = trimmed.match(/^([^:]+):\s*(.*)$/);
@@ -173,12 +177,16 @@ function parseYaml(raw: string) {
 }
 
 function parseTemplate(raw: string): TemplateDefinition | undefined {
-  try {
-    return JSON.parse(raw) as TemplateDefinition;
-  } catch {
-    const yaml = parseYaml(raw);
-    return yaml as TemplateDefinition | undefined;
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try {
+      return JSON.parse(trimmed) as TemplateDefinition;
+    } catch {
+      // fall through to YAML parsing
+    }
   }
+  const yaml = parseYaml(raw);
+  return yaml as TemplateDefinition | undefined;
 }
 
 export function loadTemplate(name: string): TemplateDefinition {

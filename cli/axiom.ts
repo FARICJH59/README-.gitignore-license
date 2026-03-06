@@ -4,8 +4,13 @@ import { listTemplates } from "../runtime/project-generator/templateLoader";
 
 async function main() {
   const [, , command, templateArg, ...rest] = process.argv;
-  if (!command || command !== "build") {
+  if (!command) {
     console.log("Usage: axiom build <template>");
+    console.log(`Available templates: ${listTemplates().join(", ")}`);
+    process.exit(1);
+  }
+  if (command !== "build") {
+    console.error(`Unknown command: ${command}`);
     console.log(`Available templates: ${listTemplates().join(", ")}`);
     process.exit(1);
   }

@@ -27,7 +27,7 @@ export type ProjectPipelineResult = {
   buildTimeMs: number;
 };
 
-// Lightweight post-build health pings to validate scheduler wiring without blocking the caller; short delay keeps tests fast.
+// Lightweight post-build health pings to validate scheduler wiring without blocking the caller; short delay keeps tests fast and ensures scheduled actions are received quickly.
 const SCHEDULER_VALIDATION_DELAY_MS = 10;
 
 export class ProjectPipeline {
