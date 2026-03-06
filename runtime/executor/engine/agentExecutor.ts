@@ -100,7 +100,7 @@ export class AgentExecutor {
       throw new Error(`Agent class ${descriptor.name} not found at ${descriptor.path}`);
     }
     const instance = new AgentCtor();
-    // Provides shared cognitive context on both the instance and env for agents that consume either surface.
+    // Provide shared cognitive context on both the instance and env for agents that consume either surface.
     const context = this.runtimeContext;
     instance.context = context;
     instance.env = { ...instance.env, context };

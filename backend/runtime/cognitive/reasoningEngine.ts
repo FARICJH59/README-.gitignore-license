@@ -75,18 +75,16 @@ export class ReasoningEngine {
    * Breadth-first search between two nodes.
    * @param startId Starting node identifier.
    * @param targetId Destination node identifier.
-   * @param maxDepth Optional search depth limit (default: 5). Paths longer than this are skipped.
-   * @returns Ordered node ids representing the path, or an empty array when no path is found.
+   * @param maxDepth Optional search depth limit (default: 5). The search will not explore beyond this depth, so longer paths are intentionally ignored.
+   * @returns Ordered node ids representing the path, or an empty array when no allowable path is found.
    */
   findPath(startId: string, targetId: string, maxDepth = 5) {
     if (startId === targetId) return [startId];
     const visited = new Set<string>([startId]);
     const queue: { nodeId: string; path: string[] }[] = [{ nodeId: startId, path: [startId] }];
 
-    while (queue.length) {
-      const next = queue.shift();
-      if (!next) break;
-      const { nodeId, path } = next;
+    for (let cursor = 0; cursor < queue.length; cursor += 1) {
+      const { nodeId, path } = queue[cursor];
       if (path.length > maxDepth) continue;
       const neighbors = this.graph.getNeighbors(nodeId);
       for (const neighbor of neighbors) {

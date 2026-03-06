@@ -28,7 +28,7 @@ export class MemoryStore {
     this.audit.record(MEMORY_AGENT, "saveMemory", "write", {
       agentId,
       tags: normalized.tags,
-      related: normalized.relatedNodeIds?.length ?? 0,
+      relatedNodeCount: normalized.relatedNodeIds?.length ?? 0,
     });
     return normalized;
   }
