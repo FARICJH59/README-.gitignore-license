@@ -285,12 +285,12 @@ spec:
   egress:
     - to:
         - podSelector: {}
+      # Allow both UDP and TCP DNS egress (UDP primary; TCP for large responses/zone transfers).
       ports:
         - port: 53
           protocol: UDP
         - port: 53
           protocol: TCP
-          # Allow both UDP and TCP DNS egress (UDP primary; TCP for large responses/zone transfers).
 "@
 
     Apply-K8sYaml -Yaml $securityYaml -Description "Namespace security (RBAC + NetworkPolicy)" -Namespaced
@@ -466,6 +466,7 @@ function Configure-Autoscalers {
     if ($DryRun) { $brainArgs += "--dry-run=client" }
     kubectl @brainArgs
 
+    # HPA min replicas align with base deployments to avoid scaling below planned capacity.
     foreach ($cluster in @("llm", "vision", "ml", "embedding")) {
         $replicas = Get-ClusterReplicas -Cluster $cluster
         $maxReplicas = $replicas * $MaxReplicasMultiplier
@@ -475,6 +476,7 @@ function Configure-Autoscalers {
     }
 
     # Worker pool HPA with CPU + queue length external metric
+    # Requires metrics adapter (e.g., KEDA/Prometheus Adapter) exposing queue_length metric.
     $workerHpa = @"
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -501,8 +503,6 @@ spec:
           name: $QueueMetricName
         target:
           type: AverageValue
-          # Requires metrics adapter (e.g., KEDA/Prometheus Adapter) exposing queue_length metric
-          # Target queue depth per worker (unitless message count)
           averageValue: $QueueLengthTarget
 "@
     Apply-K8sYaml -Yaml $workerHpa -Description "Worker pool HPA (CPU + queue length)" -Namespaced
