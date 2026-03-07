@@ -287,6 +287,7 @@ spec:
         - podSelector: {}
       # Allow both UDP and TCP DNS egress (UDP primary; TCP for large responses/zone transfers).
       # Expand egress rules per-environment for model downloads/API calls; default is locked-down/air-gapped posture.
+      # Example: add egress rules to HTTPS endpoints for model registry or telemetry API.
       ports:
         - port: 53
           protocol: UDP
@@ -442,6 +443,17 @@ function Get-ClusterMaxMultiplier {
     }
 }
 
+function Validate-MetricsAdapter {
+    if (-not (Test-Tool "kubectl")) { return $false }
+    try {
+        kubectl get --raw "/apis/external.metrics.k8s.io" | Out-Null
+        return $true
+    } catch {
+        Write-Warning "External metrics API not available; configure KEDA or Prometheus Adapter to expose queue metrics."
+        return $false
+    }
+}
+
 function Apply-InfraComponent {
     param(
         [string]$Path,
@@ -485,6 +497,10 @@ function Configure-Autoscalers {
     }
 
     # Worker pool HPA with CPU + queue length external metric
+    if (-not (Validate-MetricsAdapter)) {
+        Write-Warning "Skipping queue_length metric binding because no external metrics adapter was detected."
+        return
+    }
     # Requires metrics adapter (e.g., KEDA/Prometheus Adapter) exposing queue_length metric from the task queue (e.g., Redis/RabbitMQ queue depth).
     $workerHpa = @"
 apiVersion: autoscaling/v2
@@ -512,7 +528,7 @@ spec:
           name: $QueueMetricName
         target:
           type: AverageValue
-          averageValue: $QueueLengthTarget
+          averageValue: "$QueueLengthTarget"
 "@
     Apply-K8sYaml -Yaml $workerHpa -Description "Worker pool HPA (CPU + queue length)" -Namespaced
 }
