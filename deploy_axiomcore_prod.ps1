@@ -293,6 +293,15 @@ spec:
           protocol: UDP
         - port: 53
           protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 80
+          protocol: TCP
+      # Permit outbound HTTPS/HTTP for container registry pulls, model downloads, and external APIs.
 "@
 
     Apply-K8sYaml -Yaml $securityYaml -Description "Namespace security (RBAC + NetworkPolicy)" -Namespaced
@@ -426,6 +435,7 @@ spec:
 
 function Get-ClusterReplicas {
     param([string]$Cluster)
+    # NOTE: HPA min replicas are aligned to these values; update HPA logic if changing these defaults.
     switch ($Cluster) {
         "llm" { return 100 }
         "vision" { return 50 }
@@ -498,7 +508,29 @@ function Configure-Autoscalers {
 
     # Worker pool HPA with CPU + queue length external metric
     if (-not (Validate-MetricsAdapter)) {
-        Write-Warning "Skipping queue_length metric binding because no external metrics adapter was detected."
+        Write-Warning "No external metrics adapter detected; configuring CPU-only HPA for worker-pool."
+        $cpuOnlyHpa = @"
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: worker-pool-hpa
+  namespace: $Namespace
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: worker-pool
+  minReplicas: $WorkerPoolMinReplicas
+  maxReplicas: $WorkerPoolMaxReplicas
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+"@
+        Apply-K8sYaml -Yaml $cpuOnlyHpa -Description "Worker pool HPA (CPU-only fallback)" -Namespaced
         return
     }
     # Requires metrics adapter (e.g., KEDA/Prometheus Adapter) exposing queue_length metric from the task queue (e.g., Redis/RabbitMQ queue depth).
@@ -528,7 +560,7 @@ spec:
           name: $QueueMetricName
         target:
           type: AverageValue
-          averageValue: "$QueueLengthTarget"
+          averageValue: $QueueLengthTarget
 "@
     Apply-K8sYaml -Yaml $workerHpa -Description "Worker pool HPA (CPU + queue length)" -Namespaced
 }
