@@ -290,7 +290,7 @@ spec:
           protocol: UDP
         - port: 53
           protocol: TCP
-          # TCP 53 retained for DNS large responses; UDP is primary.
+          # TCP 53 retained for DNS when UDP responses exceed 512 bytes or for zone transfers; UDP is primary.
 "@
 
     Apply-K8sYaml -Yaml $securityYaml -Description "Namespace security (RBAC + NetworkPolicy)" -Namespaced
@@ -468,7 +468,7 @@ function Configure-Autoscalers {
 
     foreach ($cluster in @("llm", "vision", "ml", "embedding")) {
         $replicas = Get-ClusterReplicas -Cluster $cluster
-        $maxReplicas = [int]([math]::Ceiling($replicas * $MaxReplicasMultiplier))
+        $maxReplicas = $replicas * $MaxReplicasMultiplier
         $hpaArgs = @("autoscale", "deployment", "${cluster}-cluster", "--cpu-percent=50", "--min=$replicas", "--max=$maxReplicas", "-n", $Namespace) + (Get-KubectlArgs)
         if ($DryRun) { $hpaArgs += "--dry-run=client" }
         kubectl @hpaArgs
@@ -501,6 +501,7 @@ spec:
           name: $QueueMetricName
         target:
           type: AverageValue
+          # Target queue depth per worker (unitless message count)
           averageValue: $QueueLengthTarget
 "@
     Apply-K8sYaml -Yaml $workerHpa -Description "Worker pool HPA (CPU + queue length)" -Namespaced
