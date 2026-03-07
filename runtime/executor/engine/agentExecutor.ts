@@ -176,4 +176,8 @@ export class AgentExecutor {
   getMetrics() {
     return this.metrics.getSnapshot();
   }
+
+  getMetricsRecorder() {
+    return this.metrics;
+  }
 }
