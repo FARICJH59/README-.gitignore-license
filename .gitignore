@@ -165,6 +165,7 @@ yarn-error.log*
 # Frontend build output
 frontend/build/
 frontend/dist/
+frontend/dist-dry-run/
 
 # Terraform
 infra/terraform/.terraform/

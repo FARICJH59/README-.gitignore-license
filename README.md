@@ -161,6 +161,18 @@ npm install
 npm run dev
 ```
 
+### Build / Test / Dry-run
+```bash
+# Build the frontend (installs deps if missing)
+npm run build
+
+# Run all agent tests
+npm test
+
+# Non-destructive frontend build to validate packaging
+npm run dry-run
+```
+
 ### Notes
 - Backend TypeScript files are scaffolded for Cloudflare Worker + Durable Object deployment.
 - A lightweight `useAgent` stub is provided so the chat UI functions locally without backend wiring.
