@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AxiomCore Hyperscale Dashboard</title>
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <script type="module" src="/assets/dashboard.js" defer></script>
+  <script src="/assets/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: "dark" });
+    }
+  </script>
+</head>
+<body>
+  <header>
+    <div class="flex" style="justify-content: space-between; align-items: center;">
+      <div>
+        <div class="status-chip healthy">Hyperscale Online</div>
+        <h1 style="margin: 8px 0 0;">AxiomCore Hyperscale Control Plane</h1>
+        <p style="margin: 6px 0 0; color: #9ca3af;">Brain 200 • Workers 500 • GPU (LLM 100 / Vision 50 / ML 50 / Embedding 50)</p>
+        <p style="margin: 4px 0 0; color: #9ca3af;">Live cluster state, drift protection, CodeQL security, energy + revenue telemetry</p>
+      </div>
+      <div class="status-chip" id="updatedAt">Updating…</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi">
+        <div class="label">Revenue</div>
+        <div class="value" id="revenueValue">$0</div>
+        <div class="badge" id="energyBadge">Energy: 0 MWh</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Profit</div>
+        <div class="value" id="profitValue">$0</div>
+        <div class="badge" id="profitBadge">Profitability steady</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Carbon</div>
+        <div class="value" id="carbonValue">0 kg</div>
+        <div class="badge" id="carbonBadge">Carbon guardrails enforced</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Queue / Quota</div>
+        <div class="value" id="queueValue">0</div>
+        <div class="badge" id="quotaValue">Quota usage: 0%</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="card">
+      <h2>Live Cluster State</h2>
+      <div id="clusterState" class="grid-2"></div>
+      <div class="flex" style="margin-top: 10px;">
+        <span class="badge">RBAC enforced</span>
+        <span class="badge">Network policies locked</span>
+        <span class="badge">Audit logging enabled</span>
+        <span class="badge">Drift watch</span>
+      </div>
+    </section>
+
+    <section class="card" style="grid-row: span 2;">
+      <h2>Control Panel</h2>
+      <p style="color:#9ca3af; margin-top:0;">Execute cluster actions securely via the backend API. Each action logs an audit trail.</p>
+      <div class="controls">
+        <form id="workerForm">
+          <label for="workerReplicas">Worker replicas</label>
+          <input id="workerReplicas" name="workerReplicas" type="number" min="1" max="2000" value="500" />
+          <button type="submit">Update Workers</button>
+          <span></span>
+        </form>
+
+        <form id="gpuForm">
+          <label for="gpuCluster">GPU cluster</label>
+          <select id="gpuCluster" name="gpuCluster">
+            <option value="llm">LLM</option>
+            <option value="vision">Vision</option>
+            <option value="ml">ML</option>
+            <option value="embedding">Embedding</option>
+          </select>
+          <input id="gpuNodes" name="gpuNodes" type="number" min="1" max="500" value="100" />
+          <button type="submit">Update GPU Cluster</button>
+          <span></span>
+        </form>
+
+        <button id="redeployBtn">Redeploy Clusters</button>
+        <button id="dryRunBtn">Dry-Run Deployment</button>
+        <button id="codeqlBtn">Run CodeQL Scan</button>
+      </div>
+      <div class="logs" id="actionLog">Awaiting actions…</div>
+    </section>
+
+    <section class="card">
+      <h2>Top 5 Profitable Projects</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Revenue</th>
+            <th>Profit</th>
+            <th>Energy (MWh)</th>
+            <th>Carbon (kg)</th>
+          </tr>
+        </thead>
+        <tbody id="projectsTable"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Alerts &amp; Telemetry</h2>
+      <div id="alerts" class="alerts"></div>
+      <div style="margin-top:12px;">
+        <div class="status-chip" id="codeqlStatus">CodeQL: pending</div>
+        <div class="status-chip" id="driftStatus">Drift: pending</div>
+      </div>
+    </section>
+
+    <section class="card" style="grid-column: 1 / span 2;">
+      <h2>Architecture &amp; Runtime (Mermaid)</h2>
+      <pre class="mermaid" id="archDiagram">
+graph LR
+  Brain[(Brain Cluster 200)] -->|plans| WorkerPool[(Worker Pool 500)]
+  WorkerPool -->|dispatch| TaskQueue[(Task Queue)]
+  TaskQueue -->|schedule| GPU_LLM{{GPU LLM 100}}
+  TaskQueue -->|schedule| GPU_Vision{{GPU Vision 50}}
+  TaskQueue -->|schedule| GPU_ML{{GPU ML 50}}
+  TaskQueue -->|schedule| GPU_Embed{{GPU Embedding 50}}
+  WorkerPool --> Telemetry[(Telemetry)]
+  Telemetry --> Dashboard[Dashboard]
+  Dashboard --> ControlPlane[Control Panel API]
+  ControlPlane --> Redeploy[Deploy/Drift/CodeQL]
+      </pre>
+
+      <pre class="mermaid" id="runtimeDiagram">
+sequenceDiagram
+  participant User
+  participant Dashboard
+  participant API
+  participant PowerShell
+  participant K8s
+  User->>Dashboard: Click action / view metrics
+  Dashboard->>API: POST control command
+  API->>PowerShell: Run secure script
+  PowerShell->>K8s: Apply scaling/redeploy (plan or apply)
+  PowerShell-->>API: Result JSON + logs
+  API-->>Dashboard: Status + updated reports
+      </pre>
+
+      <pre class="mermaid" id="deployDiagram">
+flowchart LR
+  A[Workflow Dispatch]
+  B[Docker Build & Push ghcr.io]
+  C[Dry-run Manifest Validation]
+  D[Drift Protection Suite]
+  E[Apply to Brain/Workers/GPU]
+  F[Telemetry + Dashboard Refresh]
+  A --> B --> C --> D --> E --> F
+      </pre>
+    </section>
+  </main>
+</body>
+</html>

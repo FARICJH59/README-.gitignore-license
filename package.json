@@ -23,5 +23,9 @@
       "module": "CommonJS",
       "moduleResolution": "Node"
     }
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "mermaid": "^11.12.3"
   }
 }

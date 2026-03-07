@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: brain-cluster
+  labels:
+    app: axiomcore
+    tier: brain
+spec:
+  replicas: 200
+  selector:
+    matchLabels:
+      app: axiomcore
+      tier: brain
+  template:
+    metadata:
+      labels:
+        app: axiomcore
+        tier: brain
+    spec:
+      containers:
+        - name: brain
+          image: ghcr.io/example/axiomcore-brain:latest
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          env:
+            - name: TELEMETRY_ENDPOINT
+              value: "http://telemetry:4317"
+          ports:
+            - containerPort: 8080
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: brain-restrict
+spec:
+  podSelector:
+    matchLabels:
+      app: axiomcore
+      tier: brain
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: axiomcore
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: axiomcore
+      ports:
+        - protocol: TCP
+          port: 4317

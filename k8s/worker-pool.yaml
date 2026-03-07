@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-pool
+  labels:
+    app: axiomcore
+    tier: worker
+spec:
+  replicas: 500
+  selector:
+    matchLabels:
+      app: axiomcore
+      tier: worker
+  template:
+    metadata:
+      labels:
+        app: axiomcore
+        tier: worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/example/axiomcore-worker:latest
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          env:
+            - name: TASK_QUEUE
+              value: "task-queue"
+            - name: TELEMETRY_ENDPOINT
+              value: "http://telemetry:4317"
+          ports:
+            - containerPort: 8081
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: worker-pool-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: worker-pool
+  minReplicas: 100
+  maxReplicas: 500
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

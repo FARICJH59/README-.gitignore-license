@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-llm
+  labels: { app: axiomcore, tier: gpu, role: llm }
+spec:
+  replicas: 100
+  selector:
+    matchLabels: { app: axiomcore, tier: gpu, role: llm }
+  template:
+    metadata:
+      labels: { app: axiomcore, tier: gpu, role: llm }
+    spec:
+      containers:
+        - name: gpu-llm
+          image: ghcr.io/example/axiomcore-gpu-llm:latest
+          resources:
+            requests: { cpu: "1", memory: "4Gi", "nvidia.com/gpu": 1 }
+            limits: { cpu: "2", memory: "8Gi", "nvidia.com/gpu": 1 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-vision
+  labels: { app: axiomcore, tier: gpu, role: vision }
+spec:
+  replicas: 50
+  selector:
+    matchLabels: { app: axiomcore, tier: gpu, role: vision }
+  template:
+    metadata:
+      labels: { app: axiomcore, tier: gpu, role: vision }
+    spec:
+      containers:
+        - name: gpu-vision
+          image: ghcr.io/example/axiomcore-gpu-vision:latest
+          resources:
+            requests: { cpu: "1", memory: "4Gi", "nvidia.com/gpu": 1 }
+            limits: { cpu: "2", memory: "8Gi", "nvidia.com/gpu": 1 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-ml
+  labels: { app: axiomcore, tier: gpu, role: ml }
+spec:
+  replicas: 50
+  selector:
+    matchLabels: { app: axiomcore, tier: gpu, role: ml }
+  template:
+    metadata:
+      labels: { app: axiomcore, tier: gpu, role: ml }
+    spec:
+      containers:
+        - name: gpu-ml
+          image: ghcr.io/example/axiomcore-gpu-ml:latest
+          resources:
+            requests: { cpu: "1", memory: "4Gi", "nvidia.com/gpu": 1 }
+            limits: { cpu: "2", memory: "8Gi", "nvidia.com/gpu": 1 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-embedding
+  labels: { app: axiomcore, tier: gpu, role: embedding }
+spec:
+  replicas: 50
+  selector:
+    matchLabels: { app: axiomcore, tier: gpu, role: embedding }
+  template:
+    metadata:
+      labels: { app: axiomcore, tier: gpu, role: embedding }
+    spec:
+      containers:
+        - name: gpu-embedding
+          image: ghcr.io/example/axiomcore-gpu-embedding:latest
+          resources:
+            requests: { cpu: "1", memory: "4Gi", "nvidia.com/gpu": 1 }
+            limits: { cpu: "2", memory: "8Gi", "nvidia.com/gpu": 1 }

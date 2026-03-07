@@ -2,6 +2,27 @@
 
 An opinionated starter that pairs AxiomCore-style agents with Cloudflare Workers AI, Durable Objects, Workflows, and a React chat UI.
 
+## 🚀 Hyperscale Ops Dashboard (AxiomCore)
+
+- Dashboard: `public/HYPERSCALE_DASHBOARD.html` (auto-refresh every 30s, live alerts, Mermaid architecture/runtime/deployment diagrams)
+- Backend API: `backend/server.js` (Express) with control endpoints:
+  - `POST /api/updateWorkerReplicas` `{ replicas }`
+  - `POST /api/updateGPUCluster` `{ cluster, nodes }`
+  - `POST /api/redeployClusters`
+  - `POST /api/deployDryRun`
+  - `POST /api/runCodeQL`
+  - plus `GET /api/usage`, `GET /api/drift`, `GET /api/codeql`
+- Reports: `USAGE_REPORT.json`, `DRIFT_REPORT.json`, `codeql-results/summary.json`
+- Ops scripts: `deploy_axiomcore_prod.ps1`, `bootstrap_axiomcore.ps1`, `axiocore_hyperscale_drift_suite.ps1`, `run_codeql_scan.ps1`
+- Kubernetes: `k8s/` manifests for brain cluster (200), worker pool (500), GPU clusters (LLM 100 / Vision 50 / ML 50 / Embedding 50), task queue, telemetry
+- CI/CD: `.github/workflows/axiomcore-ci-cd.yml` (Docker build/push to ghcr, dry-run validation, CodeQL, drift suite, conditional deploy)
+
+**Run locally**
+```bash
+node backend/server.js
+# open http://localhost:3000/HYPERSCALE_DASHBOARD.html
+```
+
 ## 1️⃣ Project Structure
 
 ```
