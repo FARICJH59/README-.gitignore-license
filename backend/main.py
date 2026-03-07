@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import os
 
 import uvicorn
@@ -9,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 BASE_DIR = Path(__file__).parent
 STATIC_DIR = BASE_DIR / "static"
+REPORTS_DIR = BASE_DIR.parent / "reports"
 
 app = FastAPI(title="GPT-5 Dashboard", version="1.0.0")
 
@@ -28,6 +30,49 @@ async def health() -> dict:
 @app.get("/api/ping", tags=["system"])
 async def ping() -> dict:
     return {"message": "pong"}
+
+
+def _load_report(filename: str):
+    report_path = REPORTS_DIR / filename
+    if not report_path.exists():
+        raise HTTPException(status_code=404, detail=f"Report not found: {filename}")
+    try:
+        with report_path.open("r", encoding="utf-8") as fp:
+            return json.load(fp)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=500, detail=f"Invalid report JSON: {filename}") from exc
+
+
+@app.get("/api/usage", tags=["dashboard"])
+async def get_usage():
+    """
+    Cluster usage stats (nodes, workers, energy, GPU allocation).
+    """
+    return _load_report("USAGE_REPORT.json")
+
+
+@app.get("/api/drift", tags=["dashboard"])
+async def get_drift():
+    """
+    Drift status and change summary.
+    """
+    return _load_report("DRIFT_REPORT.json")
+
+
+@app.get("/api/jobs", tags=["dashboard"])
+async def get_jobs():
+    """
+    Queue depth, throughput, and job statuses.
+    """
+    return _load_report("JOBS_REPORT.json")
+
+
+@app.get("/api/logs", tags=["dashboard"])
+async def get_logs():
+    """
+    Latest system log entries.
+    """
+    return _load_report("LOGS_REPORT.json")
 
 
 @app.get("/", include_in_schema=False)
