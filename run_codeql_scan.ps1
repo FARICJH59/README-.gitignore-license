@@ -14,10 +14,13 @@ function Get-ChangedFiles {
     $files = @()
     if (Get-Command git -ErrorAction SilentlyContinue) {
         try {
-            $files = git diff --name-only HEAD~1 2>$null
-            if (-not $files) {
-                $files = git status --porcelain | ForEach-Object { $_.Substring(3) }
+            $hasPrevious = git rev-parse --verify HEAD~1 2>$null
+            if ($hasPrevious) {
+                $files = git diff --name-only HEAD~1 2>$null
+            } else {
+                $files = git ls-files
             }
+            if (-not $files) { $files = git status --porcelain | ForEach-Object { $_.Substring(3) } }
         } catch {
             $files = @()
         }

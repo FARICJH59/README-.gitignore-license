@@ -23,6 +23,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(path.join(ROOT, "public")));
+app.use("/assets", express.static(path.join(ROOT, "node_modules", "mermaid", "dist")));
 app.use("/codeql-results", express.static(path.join(ROOT, "codeql-results")));
 
 function runScript(scriptName, args = []) {
