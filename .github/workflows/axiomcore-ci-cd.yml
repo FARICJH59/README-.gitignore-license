@@ -1,0 +1,32 @@
+name: AxiomCore CI/CD
+
+on:
+  pull_request:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  codeql-placeholder:
+    name: codeql-placeholder
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder CodeQL check
+        run: echo "CodeQL placeholder check completed."
+
+  deploy-plan:
+    name: deploy-plan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder deploy plan
+        run: echo "Deploy plan placeholder completed."
+
+  drift-watch:
+    name: drift-watch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder drift watch
+        run: echo "Drift watch placeholder completed."
