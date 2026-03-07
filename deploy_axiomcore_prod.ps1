@@ -288,7 +288,7 @@ spec:
           protocol: TCP
 "@
 
-    Apply-K8sYaml -Yaml $securityYaml -Description "Namespace security (RBAC + NetworkPolicy)" -Namespaced:$false
+    Apply-K8sYaml -Yaml $securityYaml -Description "Namespace security (RBAC + NetworkPolicy)" -Namespaced
 }
 
 function Apply-K8sYaml {
@@ -457,7 +457,14 @@ function Configure-Autoscalers {
     kubectl @brainArgs
 
     foreach ($cluster in @("llm", "vision", "ml", "embedding")) {
-        $hpaArgs = @("autoscale", "deployment", "${cluster}-cluster", "--cpu-percent=50", "--min=10", "--max=200", "-n", $Namespace) + (Get-KubectlArgs)
+        $replicas = switch ($cluster) {
+            "llm" { 100 }
+            "vision" { 50 }
+            "ml" { 50 }
+            "embedding" { 50 }
+            default { 10 }
+        }
+        $hpaArgs = @("autoscale", "deployment", "${cluster}-cluster", "--cpu-percent=50", "--min=$replicas", "--max=200", "-n", $Namespace) + (Get-KubectlArgs)
         if ($DryRun) { $hpaArgs += "--dry-run=client" }
         kubectl @hpaArgs
     }
@@ -486,7 +493,7 @@ spec:
     - type: External
       external:
         metric:
-          name: "$QueueMetricName"
+          name: $QueueMetricName
         target:
           type: AverageValue
           averageValue: 100
