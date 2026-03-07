@@ -25,6 +25,8 @@ $Namespace = "axiomcore-prod"
 $GpuProduct = "GB300-NVL72"
 $DocsPath = "docs"
 $QueueMetricName = "queue_length"
+$WorkerPoolMinReplicas = 100
+$WorkerPoolMaxReplicas = 800
 
 function Write-Stage {
     param([string]$Message)
@@ -350,13 +352,7 @@ spec:
 function Deploy-GpuClusters {
     Write-Stage "Deploying GPU clusters"
     foreach ($cluster in @("llm", "vision", "ml", "embedding")) {
-        $replicas = switch ($cluster) {
-            "llm" { 100 }
-            "vision" { 50 }
-            "ml" { 50 }
-            "embedding" { 50 }
-            default { 10 }
-        }
+        $replicas = Get-ClusterReplicas -Cluster $cluster
         $deploymentYaml = @"
 apiVersion: apps/v1
 kind: Deployment
@@ -423,6 +419,17 @@ spec:
     Apply-K8sYaml -Yaml $workerYaml -Description "Worker pool deployment" -Namespaced
 }
 
+function Get-ClusterReplicas {
+    param([string]$Cluster)
+    switch ($Cluster) {
+        "llm" { return 100 }
+        "vision" { return 50 }
+        "ml" { return 50 }
+        "embedding" { return 50 }
+        default { return 10 }
+    }
+}
+
 function Apply-InfraComponent {
     param(
         [string]$Path,
@@ -457,14 +464,9 @@ function Configure-Autoscalers {
     kubectl @brainArgs
 
     foreach ($cluster in @("llm", "vision", "ml", "embedding")) {
-        $replicas = switch ($cluster) {
-            "llm" { 100 }
-            "vision" { 50 }
-            "ml" { 50 }
-            "embedding" { 50 }
-            default { 10 }
-        }
-        $hpaArgs = @("autoscale", "deployment", "${cluster}-cluster", "--cpu-percent=50", "--min=$replicas", "--max=200", "-n", $Namespace) + (Get-KubectlArgs)
+        $replicas = Get-ClusterReplicas -Cluster $cluster
+        $maxReplicas = [int]([math]::Ceiling($replicas * 3))
+        $hpaArgs = @("autoscale", "deployment", "${cluster}-cluster", "--cpu-percent=50", "--min=$replicas", "--max=$maxReplicas", "-n", $Namespace) + (Get-KubectlArgs)
         if ($DryRun) { $hpaArgs += "--dry-run=client" }
         kubectl @hpaArgs
     }
@@ -481,8 +483,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: worker-pool
-  minReplicas: 100
-  maxReplicas: 800
+  minReplicas: $WorkerPoolMinReplicas
+  maxReplicas: $WorkerPoolMaxReplicas
   metrics:
     - type: Resource
       resource:
