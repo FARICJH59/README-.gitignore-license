@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-03-07T14:42:25Z",
+  "active_brain_nodes": 200,
+  "active_worker_nodes": 500,
+  "gpu_clusters": {
+    "LLM": 100,
+    "Vision": 50,
+    "ML": 50,
+    "Embedding": 50
+  },
+  "energy_consumption_mwh": 42.7,
+  "carbon_quota": "within-budget",
+  "alerts": [],
+  "projects": [],
+  "notes": "Sample usage report for dashboard rendering."
+}

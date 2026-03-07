@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AxiomCore Hyperscale Ops Dashboard</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="grid-bg"></div>
+    <header class="top-bar">
+      <div>
+        <p class="eyebrow" data-i18n="neural">Neural + Quantum + DevOps</p>
+        <h1 class="title">AxiomCore Hyperscale Ops Dashboard</h1>
+        <p class="subtitle" data-i18n="liveState">
+          Live cluster state, drift protection, and carbon-aware monetization.
+        </p>
+      </div>
+      <div class="actions">
+        <button id="refresh" class="btn primary" data-i18n="refresh">Refresh</button>
+        <select id="locale" class="select">
+          <option value="en">EN</option>
+          <option value="fr">FR</option>
+        </select>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel kpi-panel">
+        <div class="panel-head">
+          <h2 data-i18n="kpis">Live KPIs</h2>
+          <span class="chip">Hyperscale</span>
+        </div>
+        <div id="kpi-grid" class="kpi-grid"></div>
+      </section>
+
+      <section class="panel alerts-panel">
+        <div class="panel-head">
+          <h2 data-i18n="alerts">Alerts & Drift</h2>
+          <span class="chip accent">Resilience</span>
+        </div>
+        <div id="alerts" class="alerts"></div>
+      </section>
+
+      <section class="panel mermaid-panel">
+        <div class="panel-head">
+          <h2>Topology & Routing</h2>
+          <span class="chip calm">Mermaid</span>
+        </div>
+        <div id="mermaid-container">
+          <pre class="mermaid" id="cluster-diagram">
+graph LR
+  BrainCluster(("Brain Cluster (200)")) -->|tasks| WorkerPool["Worker Pool (500)"]
+  WorkerPool -->|routes| TaskQueue["Task Queue"]
+  WorkerPool -->|LLM| LLM["LLM GPUs (100)"]
+  WorkerPool -->|Vision| Vision["Vision GPUs (50)"]
+  WorkerPool -->|ML| ML["ML GPUs (50)"]
+  WorkerPool -->|Embedding| Embedding["Embedding GPUs (50)"]
+  BrainCluster --> Telemetry["Telemetry & OTEL"]
+  TaskQueue -->|metrics| Telemetry
+          </pre>
+        </div>
+      </section>
+
+      <section class="panel trio">
+        <div class="card">
+          <p class="eyebrow">Neural Layer</p>
+          <h3>Agents & Predictive Monitoring</h3>
+          <p id="neural-card">
+            GPT/PyTorch/LangChain agents generate code, protect drift, and optimize energy in real time.
+          </p>
+        </div>
+        <div class="card">
+          <p class="eyebrow">Quantum Layer</p>
+          <h3>Predictive–Quantum Synergy</h3>
+          <p id="quantum-card">
+            Qiskit + D-Wave heuristics route inference across GPU clusters and worker pools.
+          </p>
+        </div>
+        <div class="card">
+          <p class="eyebrow">Autonomous DevOps</p>
+          <h3>Self-Healing CI/CD</h3>
+          <p id="devops-card">
+            Drift suite, PlanOnly deploys, CodeQL gate, and Kubernetes autoscaling with RBAC and NetworkPolicy.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <script src="/assets/mermaid.min.js"></script>
+    <script>
+      window.addEventListener("error", (e) => {
+        if (e.target && e.target.src && e.target.src.includes("mermaid.min.js")) {
+          const fallback = document.createElement("script");
+          fallback.src = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js";
+          document.body.appendChild(fallback);
+        }
+      });
+    </script>
+    <script src="/assets/dashboard.js" type="module"></script>
+  </body>
+</html>

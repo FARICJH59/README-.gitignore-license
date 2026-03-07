@@ -1,0 +1,84 @@
+name: AxiomCore CI/CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: axiomcore-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Run tests
+        run: |
+          npm run test:executor
+          npm run test:fraud-agent
+          npm run test:data-parser
+      - name: Render reports (plan-only)
+        shell: pwsh
+        run: |
+          ./ps/deploy_axiomcore_prod.ps1 -PlanOnly
+          ./ps/axiocore_hyperscale_drift_suite.ps1
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: axiomcore-reports
+          path: |
+            reports/USAGE_REPORT.json
+            reports/DRIFT_REPORT.json
+
+  codeql-placeholder:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Generate placeholder SARIF
+        shell: pwsh
+        run: ./ps/run_codeql_scan.ps1
+      - name: Upload SARIF
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-placeholder
+          path: codeql-results/placeholder.sarif
+
+  drift-watch:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run drift suite
+        shell: pwsh
+        run: ./ps/axiocore_hyperscale_drift_suite.ps1
+      - name: Upload drift report
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-report
+          path: reports/DRIFT_REPORT.json
+
+  deploy-plan:
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Plan-only deploy
+        shell: pwsh
+        run: ./ps/deploy_axiomcore_prod.ps1 -PlanOnly

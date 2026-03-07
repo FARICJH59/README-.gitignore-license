@@ -10,7 +10,12 @@
     "validate:new-agent": "ts-node scripts/validateNewAgent.ts",
     "test:fraud-agent": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testFraudDetectionAgent.ts",
     "test:data-parser": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testDataParserAgent.ts",
-    "test:executor": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testAgentExecutor.ts"
+    "test:executor": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testAgentExecutor.ts",
+    "start:backend": "node backend/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "mermaid": "^10.9.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260305.1",

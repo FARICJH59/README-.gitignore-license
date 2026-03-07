@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: worker-pool-sa
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-pool
+  labels:
+    app: worker-node
+spec:
+  replicas: 500
+  selector:
+    matchLabels:
+      app: worker-node
+  template:
+    metadata:
+      labels:
+        app: worker-node
+    spec:
+      serviceAccountName: worker-pool-sa
+      containers:
+        - name: worker-node
+          image: axiomcore/worker:latest
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1500m"
+              memory: "2Gi"
+          env:
+            - name: CLUSTER_ROLE
+              value: "worker"
+            - name: TASK_QUEUE
+              value: "task-queue:4222"
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker-pool-svc
+  labels:
+    app: worker-node
+spec:
+  selector:
+    app: worker-node
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: worker-pool-netpol
+spec:
+  podSelector:
+    matchLabels:
+      app: worker-node
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: task-queue
+        - podSelector:
+            matchLabels:
+              app: brain-node
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: task-queue
+      ports:
+        - protocol: TCP
+          port: 4222
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: worker-pool-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: worker-pool
+  minReplicas: 100
+  maxReplicas: 500
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65
+    - type: Object
+      object:
+        describedObject:
+          apiVersion: v1
+          kind: Service
+          name: task-queue
+        metric:
+          name: queue_length
+        target:
+          type: Value
+          value: 200
