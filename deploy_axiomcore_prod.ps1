@@ -25,10 +25,11 @@ $Namespace = "axiomcore-prod"
 $GpuProduct = "GB300-NVL72"
 $DocsPath = "docs"
 $QueueMetricName = "queue_length"
-$QueueLengthTarget = 100 # target average queue length per worker for autoscaling
+$QueueLengthTarget = "100" # target average queue length per worker for autoscaling (Quantity string)
 $WorkerPoolMinReplicas = 100
 $WorkerPoolMaxReplicas = 800
 $MaxReplicasMultiplier = 3 # GPU clusters can scale up to 3x their base replicas
+$RegistryEgressCidrs = @() # Populate with registry/model/API CIDRs to allow HTTPS egress
 
 function Write-Stage {
     param([string]$Message)
@@ -286,21 +287,38 @@ spec:
     - to:
         - podSelector: {}
       # Allow both UDP and TCP DNS egress (UDP primary; TCP for large responses/zone transfers).
-      # Expand egress rules per-environment for model downloads/API calls; default is locked-down/air-gapped posture.
-      # Example: add egress rules to HTTPS endpoints for model registry or telemetry API.
+      # Expand egress rules per-environment for model downloads/API calls; default stays locked-down unless $RegistryEgressCidrs is set.
       ports:
         - port: 53
           protocol: UDP
         - port: 53
           protocol: TCP
+"@
+
+    if ($RegistryEgressCidrs.Count -gt 0) {
+        foreach ($cidr in $RegistryEgressCidrs) {
+            $policyName = "allow-egress-" + ($cidr -replace '[^a-zA-Z0-9]', "-")
+            $securityYaml += @"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: $policyName
+  namespace: $Namespace
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
     - to:
         - ipBlock:
-            cidr: 198.51.100.0/24
+            cidr: $cidr
       ports:
         - port: 443
           protocol: TCP
-      # Replace cidr with approved registry/model/API ranges; keep scoped for zero-trust posture.
 "@
+        }
+    }
 
     Apply-K8sYaml -Yaml $securityYaml -Description "Namespace security (RBAC + NetworkPolicy)" -Namespaced
 }
