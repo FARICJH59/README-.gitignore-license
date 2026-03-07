@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 import os
+from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -32,7 +33,7 @@ async def ping() -> dict:
     return {"message": "pong"}
 
 
-def _load_report(filename: str):
+def _load_report(filename: str) -> Any:
     report_path = REPORTS_DIR / filename
     if not report_path.exists():
         raise HTTPException(status_code=404, detail=f"Report not found: {filename}")
@@ -44,7 +45,7 @@ def _load_report(filename: str):
 
 
 @app.get("/api/usage", tags=["dashboard"])
-async def get_usage():
+async def get_usage() -> Any:
     """
     Cluster usage stats (nodes, workers, energy, GPU allocation).
     """
@@ -52,7 +53,7 @@ async def get_usage():
 
 
 @app.get("/api/drift", tags=["dashboard"])
-async def get_drift():
+async def get_drift() -> Any:
     """
     Drift status and change summary.
     """
@@ -60,7 +61,7 @@ async def get_drift():
 
 
 @app.get("/api/jobs", tags=["dashboard"])
-async def get_jobs():
+async def get_jobs() -> Any:
     """
     Queue depth, throughput, and job statuses.
     """
@@ -68,7 +69,7 @@ async def get_jobs():
 
 
 @app.get("/api/logs", tags=["dashboard"])
-async def get_logs():
+async def get_logs() -> Any:
     """
     Latest system log entries.
     """
