@@ -25,7 +25,7 @@ $Namespace = "axiomcore-prod"
 $GpuProduct = "GB300-NVL72"
 $DocsPath = "docs"
 $QueueMetricName = "queue_length"
-$QueueLengthTarget = 100 # target average queue length per worker for autoscaling
+$QueueLengthTarget = "100" # target average queue length per worker for autoscaling
 $WorkerPoolMinReplicas = 100
 $WorkerPoolMaxReplicas = 800
 $MaxReplicasMultiplier = 3 # GPU clusters can scale up to 3x their base replicas
@@ -453,7 +453,7 @@ function Get-ClusterMaxMultiplier {
     }
 }
 
-function Validate-MetricsAdapter {
+function Test-MetricsAdapter {
     if (-not (Test-Tool "kubectl")) { return $false }
     try {
         kubectl get --raw "/apis/external.metrics.k8s.io" | Out-Null
@@ -507,7 +507,7 @@ function Configure-Autoscalers {
     }
 
     # Worker pool HPA with CPU + queue length external metric
-    if (-not (Validate-MetricsAdapter)) {
+    if (-not (Test-MetricsAdapter)) {
         Write-Warning "No external metrics adapter detected; configuring CPU-only HPA for worker-pool."
         $cpuOnlyHpa = @"
 apiVersion: autoscaling/v2
@@ -560,7 +560,7 @@ spec:
           name: $QueueMetricName
         target:
           type: AverageValue
-          averageValue: $QueueLengthTarget
+          averageValue: "$QueueLengthTarget"
 "@
     Apply-K8sYaml -Yaml $workerHpa -Description "Worker pool HPA (CPU + queue length)" -Namespaced
 }
