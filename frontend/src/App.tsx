@@ -3,6 +3,8 @@ import LandingPage from "./pages";
 import ApiPage from "./pages/api";
 import DashboardPage from "./pages/dashboard";
 
+type Schema = Record<string, unknown> | null;
+
 const tabs = [
   { id: "overview", label: "Overview" },
   { id: "api", label: "API Playground" },
@@ -11,9 +13,8 @@ const tabs = [
 
 export default function App() {
   const [tab, setTab] = useState("overview");
-  const [schema, setSchema] = useState(null);
+  const [schema, setSchema] = useState<Schema>(null);
   const [schemaError, setSchemaError] = useState("");
-  const [telemetry, setTelemetry] = useState([]);
 
   useEffect(() => {
     fetch("/schema")
@@ -21,14 +22,6 @@ export default function App() {
       .then(setSchema)
       .catch(() => setSchemaError("Schema unavailable in static preview. Deploy Worker to enable live data."));
   }, []);
-
-  useEffect(() => {
-    if (tab !== "dashboard") return;
-    fetch("/iot/devices")
-      .then((res) => res.json())
-      .then((data) => setTelemetry(data.devices ?? []))
-      .catch(() => setTelemetry([]));
-  }, [tab]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900">
@@ -58,7 +51,7 @@ export default function App() {
 
         {tab === "overview" && <LandingPage schema={schema} />}
         {tab === "api" && <ApiPage schema={schema} schemaError={schemaError} />}
-        {tab === "dashboard" && <DashboardPage telemetry={telemetry} />}
+        {tab === "dashboard" && <DashboardPage />}
       </div>
     </div>
   );

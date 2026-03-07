@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   esbuild: {
-    loader: "jsx",
+    loader: "tsx",
     include: [/src\/.*\.[jt]sx?$/, /pages\/.*\.[jt]sx?$/],
   },
   resolve: {
@@ -22,7 +22,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api": "http://localhost:8000",
+      "/api": "http://localhost:3000",
     },
   },
 });

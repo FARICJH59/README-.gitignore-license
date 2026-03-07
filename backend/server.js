@@ -84,6 +84,14 @@ app.get("/api/drift", apiLimiter, (_req, res) => {
   res.sendFile(path.join(__dirname, "../reports/DRIFT_REPORT.json"));
 });
 
+app.get("/api/jobs", apiLimiter, (_req, res) => {
+  res.sendFile(path.join(__dirname, "../reports/JOBS_REPORT.json"));
+});
+
+app.get("/api/logs", apiLimiter, (_req, res) => {
+  res.sendFile(path.join(__dirname, "../reports/LOGS_REPORT.json"));
+});
+
 app.listen(PORT, () => {
   console.log(`AxiomCore backend running at http://localhost:${PORT}`);
 });

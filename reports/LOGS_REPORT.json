@@ -1,0 +1,6 @@
+[
+  { "timestamp": "2026-03-07T18:04:10Z", "level": "info", "message": "Brain cluster autoscaler reconciled to 200 nodes." },
+  { "timestamp": "2026-03-07T18:04:45Z", "level": "warn", "message": "GPU Vision pool at 82% utilization. Evaluating HPA scale out." },
+  { "timestamp": "2026-03-07T18:05:12Z", "level": "error", "message": "Worker task-8745 retry scheduled after transient queue timeout." },
+  { "timestamp": "2026-03-07T18:05:30Z", "level": "info", "message": "Task queue latency stabilized below 120ms p50." }
+]
