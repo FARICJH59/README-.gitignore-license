@@ -25,7 +25,7 @@ $Namespace = "axiomcore-prod"
 $GpuProduct = "GB300-NVL72"
 $DocsPath = "docs"
 $QueueMetricName = "queue_length"
-$QueueLengthTarget = "100" # target average queue length per worker for autoscaling
+$QueueLengthTarget = 100 # target average queue length per worker for autoscaling
 $WorkerPoolMinReplicas = 100
 $WorkerPoolMaxReplicas = 800
 $MaxReplicasMultiplier = 3 # GPU clusters can scale up to 3x their base replicas
@@ -295,13 +295,11 @@ spec:
           protocol: TCP
     - to:
         - ipBlock:
-            cidr: 0.0.0.0/0
+            cidr: 198.51.100.0/24
       ports:
         - port: 443
           protocol: TCP
-        - port: 80
-          protocol: TCP
-      # Permit outbound HTTPS/HTTP for container registry pulls, model downloads, and external APIs.
+      # Replace cidr with approved registry/model/API ranges; keep scoped for zero-trust posture.
 "@
 
     Apply-K8sYaml -Yaml $securityYaml -Description "Namespace security (RBAC + NetworkPolicy)" -Namespaced
@@ -459,7 +457,7 @@ function Test-MetricsAdapter {
         kubectl get --raw "/apis/external.metrics.k8s.io" | Out-Null
         return $true
     } catch {
-        Write-Warning "External metrics API not available; configure KEDA or Prometheus Adapter to expose queue metrics."
+        Write-Warning ("External metrics API not available; configure KEDA or Prometheus Adapter to expose queue metrics. Details: {0}" -f $_.Exception.Message)
         return $false
     }
 }
@@ -560,7 +558,7 @@ spec:
           name: $QueueMetricName
         target:
           type: AverageValue
-          averageValue: "$QueueLengthTarget"
+          averageValue: $QueueLengthTarget
 "@
     Apply-K8sYaml -Yaml $workerHpa -Description "Worker pool HPA (CPU + queue length)" -Namespaced
 }
