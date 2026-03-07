@@ -1,0 +1,52 @@
+{
+  "updatedAt": "2026-03-07T14:34:00Z",
+  "clusters": {
+    "brain": {
+      "nodes": 200,
+      "cpuUtilization": 0.58,
+      "energyMWh": 320,
+      "status": "healthy"
+    },
+    "worker": {
+      "nodes": 500,
+      "cpuUtilization": 0.71,
+      "energyMWh": 560,
+      "status": "healthy"
+    },
+    "gpu": {
+      "llm": { "nodes": 100, "utilization": 0.82, "energyMWh": 900 },
+      "vision": { "nodes": 50, "utilization": 0.63, "energyMWh": 410 },
+      "ml": { "nodes": 50, "utilization": 0.57, "energyMWh": 280 },
+      "embedding": { "nodes": 50, "utilization": 0.61, "energyMWh": 230 }
+    }
+  },
+  "telemetry": {
+    "cpuHours": 12840,
+    "gpuHours": 25120,
+    "energyMWh": 2700,
+    "carbonKg": 980,
+    "revenue": 312000,
+    "cost": 224000,
+    "profit": 88000,
+    "quotaUsed": 0.68,
+    "quotaLimit": 1.0,
+    "taskQueueDepth": 820,
+    "alerts": [
+      "High GPU utilization on LLM cluster",
+      "Negative profit watchlist: Vision Lab"
+    ]
+  },
+  "projects": [
+    { "name": "GenomePilot", "revenue": 92000, "cost": 57000, "profit": 35000, "carbonKg": 120, "energyMWh": 220, "gpuHours": 5200, "cpuHours": 1800 },
+    { "name": "AtlasNav", "revenue": 74000, "cost": 46000, "profit": 28000, "carbonKg": 140, "energyMWh": 260, "gpuHours": 4200, "cpuHours": 2200 },
+    { "name": "AetherMind", "revenue": 65000, "cost": 41000, "profit": 24000, "carbonKg": 118, "energyMWh": 210, "gpuHours": 3800, "cpuHours": 1700 },
+    { "name": "Vision Lab", "revenue": 41000, "cost": 38000, "profit": 3000, "carbonKg": 150, "energyMWh": 300, "gpuHours": 2800, "cpuHours": 1900 },
+    { "name": "QuantumOps", "revenue": 40000, "cost": 32000, "profit": 8000, "carbonKg": 110, "energyMWh": 180, "gpuHours": 3100, "cpuHours": 1600 }
+  ],
+  "quotas": {
+    "energyMWhBudget": 3000,
+    "carbonKgBudget": 1250,
+    "cpuHoursCap": 15000,
+    "gpuHoursCap": 30000
+  }
+}

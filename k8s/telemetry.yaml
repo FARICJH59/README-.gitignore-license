@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetry
+  labels:
+    app: axiomcore
+    tier: telemetry
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: axiomcore
+      tier: telemetry
+  template:
+    metadata:
+      labels:
+        app: axiomcore
+        tier: telemetry
+    spec:
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.95.0
+          args: ["--config=/etc/otel-collector-config.yaml"]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otel-collector-config.yaml
+              subPath: otel-collector-config.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: telemetry-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telemetry-config
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+          grpc:
+    exporters:
+      logging:
+        loglevel: info
+    service:
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          exporters: [logging]
+        traces:
+          receivers: [otlp]
+          exporters: [logging]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemetry
+spec:
+  selector:
+    app: axiomcore
+    tier: telemetry
+  ports:
+    - name: http
+      port: 4318
+      targetPort: 4318
+    - name: grpc
+      port: 4317
+      targetPort: 4317

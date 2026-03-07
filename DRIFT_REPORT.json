@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-03-07T14:34:00Z",
+  "status": "watch",
+  "findings": [
+    { "component": "brain", "type": "config", "severity": "low", "details": "RBAC roles match baseline" },
+    { "component": "worker", "type": "scaling", "severity": "medium", "details": "Queue depth trending up; recommend +25 replicas" },
+    { "component": "gpu-llm", "type": "image", "severity": "low", "details": "Latest validated image deployed" },
+    { "component": "telemetry", "type": "network", "severity": "high", "details": "North-south egress spiked 15% over SLO" }
+  ],
+  "recommendations": [
+    "Apply autoscaler override for worker pool if queue depth > 1000",
+    "Throttle non-critical GPU jobs during peak carbon hours",
+    "Rotate service tokens touching kube-system namespace within 24h"
+  ],
+  "controls": {
+    "rbac": "enforced",
+    "networkPolicy": "restricted",
+    "audit": "enabled"
+  }
+}

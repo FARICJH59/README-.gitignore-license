@@ -1,0 +1,95 @@
+name: AxiomCore CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment (prod/stage)"
+        required: false
+        default: "prod"
+      dry_run:
+        description: "Dry-run deployment only"
+        required: false
+        default: "true"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-test-secure:
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}/axiomcore
+      DRY_RUN: ${{ github.event_name == 'pull_request' || github.event.inputs.dry_run == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Tests (executor)
+        run: npm run test:executor
+
+      - name: Drift protection suite
+        run: pwsh ./axiocore_hyperscale_drift_suite.ps1
+
+      - name: CodeQL scan (lightweight)
+        run: pwsh ./run_codeql_scan.ps1
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: axiomcore-reports
+          path: |
+            USAGE_REPORT.json
+            DRIFT_REPORT.json
+            codeql-results/**
+
+      - name: Log in to registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build container image
+        run: docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -f backend/Dockerfile backend
+
+      - name: Push image
+        if: github.event_name != 'pull_request'
+        run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.30.0"
+
+      - name: Validate manifests (dry-run)
+        run: kubectl apply -f k8s --dry-run=client
+
+      - name: Deploy to cluster
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.DRY_RUN != 'true'
+        run: |
+          pwsh ./deploy_axiomcore_prod.ps1 -WorkerReplicas 500 -GPUCluster llm -GPUCount 100
+          kubectl apply -f k8s
+
+      - name: Redeploy (manual workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch' && env.DRY_RUN != 'true'
+        run: |
+          pwsh ./deploy_axiomcore_prod.ps1 -Redeploy
+          kubectl apply -f k8s
