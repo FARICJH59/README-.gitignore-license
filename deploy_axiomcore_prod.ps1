@@ -290,7 +290,7 @@ spec:
           protocol: UDP
         - port: 53
           protocol: TCP
-          # TCP 53 retained for DNS when UDP responses exceed 512 bytes or for zone transfers; UDP is primary.
+          # Allow both UDP and TCP DNS egress (UDP primary; TCP for large responses/zone transfers).
 "@
 
     Apply-K8sYaml -Yaml $securityYaml -Description "Namespace security (RBAC + NetworkPolicy)" -Namespaced
@@ -501,6 +501,7 @@ spec:
           name: $QueueMetricName
         target:
           type: AverageValue
+          # Requires metrics adapter (e.g., KEDA/Prometheus Adapter) exposing queue_length metric
           # Target queue depth per worker (unitless message count)
           averageValue: $QueueLengthTarget
 "@
