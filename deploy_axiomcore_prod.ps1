@@ -21,7 +21,7 @@ Set-StrictMode -Version Latest
 $RepoName = "axiomcore"
 $DockerImage = "axiomcore/enterprise:latest"
 $Namespace = "axiomcore-prod"
-$GpuType = "nvidia.com/GB300-NVL72"
+$GpuProduct = "GB300-NVL72"
 $DocsPath = "docs"
 
 function Write-Stage {
@@ -254,12 +254,12 @@ spec:
             cpu: "4"
             memory: "8Gi"
             nvidia.com/gpu: 1
-          requests:
+        requests:
             cpu: "2"
             memory: "4Gi"
             nvidia.com/gpu: 1
       nodeSelector:
-        nvidia.com/gpu.product: "$GpuType"
+        nvidia.com/gpu.product: "$GpuProduct"
 "@
 
     Apply-K8sYaml -Yaml $brainYaml -Description "Brain cluster" -Namespaced
@@ -293,7 +293,7 @@ spec:
           requests:
             nvidia.com/gpu: 1
       nodeSelector:
-        nvidia.com/gpu.product: "$GpuType"
+        nvidia.com/gpu.product: "$GpuProduct"
 "@
 
         Apply-K8sYaml -Yaml $deploymentYaml -Description "${cluster} GPU cluster" -Namespaced

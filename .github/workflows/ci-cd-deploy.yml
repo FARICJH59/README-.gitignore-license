@@ -9,6 +9,7 @@ on:
 env:
   DOCKER_IMAGE: axiomcore/enterprise:latest
   NAMESPACE: axiomcore-prod
+  KUBE_CONTEXT: ${{ secrets.KUBE_CONTEXT }}
 
 jobs:
   deploy:
@@ -18,11 +19,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Login to Docker registry
+        if: hashFiles('Dockerfile') != ''
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
+            echo "Docker credentials are required to push images." >&2
+            exit 1
+          fi
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
       - name: Build & Push Docker
         if: hashFiles('Dockerfile') != ''
         run: |
           docker build -t $DOCKER_IMAGE .
           docker push $DOCKER_IMAGE
+
+      - name: Configure kubectl
+        if: hashFiles('infra/k8s/**') != ''
+        env:
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
+          KUBE_CONTEXT: ${{ secrets.KUBE_CONTEXT }}
+        run: |
+          if [ -z "$KUBE_CONFIG_B64" ]; then
+            echo "KUBE_CONFIG_B64 secret is required to configure kubectl." >&2
+            exit 1
+          fi
+          mkdir -p "$HOME/.kube"
+          echo "$KUBE_CONFIG_B64" | base64 -d > "$HOME/.kube/config"
+          if [ -n "$KUBE_CONTEXT" ]; then
+            kubectl config use-context "$KUBE_CONTEXT"
+          fi
 
       - name: Deploy to K8s (if manifests exist)
         if: hashFiles('infra/k8s/**') != ''
