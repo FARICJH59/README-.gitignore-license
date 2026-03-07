@@ -8,12 +8,14 @@ import { AgentExecutor } from "../runtime/executor/agentExecutor";
 import { AgentScheduler } from "../runtime/executor/agentScheduler";
 import { AgentRetryManager } from "../runtime/executor/agentRetryManager";
 import { AgentSelfHeal } from "../runtime/executor/agentSelfHeal";
+import { MetricsRecorder } from "../runtime/telemetry/metricsRecorder";
 
 const RECURRING_TEST_DURATION_MS = 120;
 
 async function main() {
-  const selfHeal = new AgentSelfHeal({ debug: true });
-  const executor = new AgentExecutor({ debug: true, selfHeal });
+  const sharedMetrics = new MetricsRecorder();
+  const selfHeal = new AgentSelfHeal({ debug: true, metricsRecorder: sharedMetrics });
+  const executor = new AgentExecutor({ debug: true, selfHeal, metricsRecorder: sharedMetrics });
   const scheduler = new AgentScheduler(executor, { debug: true });
   const retryManager = new AgentRetryManager(executor, { debug: true });
 
