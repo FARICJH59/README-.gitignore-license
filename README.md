@@ -2,6 +2,28 @@
 
 An opinionated starter that pairs AxiomCore-style agents with Cloudflare Workers AI, Durable Objects, Workflows, and a React chat UI.
 
+## 🚀 Neural Quantum DevOps AxiomCore (runnable scaffold)
+
+- **Backend**: `backend/server.js` (Node + Express). Endpoints:  
+  - `POST /api/deploy` → runs `ps/deploy_axiomcore_prod.ps1` (supports `planOnly` payload)  
+  - `POST /api/drift` → runs `ps/axiocore_hyperscale_drift_suite.ps1`  
+  - `POST /api/bootstrap` → runs `ps/bootstrap_axiomcore.ps1`  
+  - `GET /api/usage` → serves `reports/USAGE_REPORT.json`  
+  - `GET /api/drift` → serves `reports/DRIFT_REPORT.json`
+- **Dashboard**: `public/HYPERSCALE_DASHBOARD.html` with holographic 3D styling, i18n (EN/FR), live KPIs, alerts, and Mermaid topology (served from `node_modules/mermaid` with CDN fallback). JS and CSS live in `public/assets/`.
+- **PowerShell automation** (`ps/`): deploy (plan-only included), drift suite, bootstrap, and `run_codeql_scan.ps1` to emit SARIF placeholders.
+- **Kubernetes manifests** (`k8s/`): brain cluster (200), worker pool (500), GPU clusters (LLM 100, Vision 50, ML 50, Embedding 50), task queue, telemetry. RBAC + NetworkPolicy + HPA (CPU + queue-length examples) included.
+- **Reports & CodeQL**: sample `reports/USAGE_REPORT.json`, `reports/DRIFT_REPORT.json`, and `codeql-results/placeholder.sarif`.
+- **CI/CD**: `.github/workflows/axiomcore-ci-cd.yml` runs npm tests, drift suite, plan-only deploy, and publishes reports/SARIF artifacts.
+
+Run locally:
+```bash
+npm install
+npm run start:backend   # serves /HYPERSCALE_DASHBOARD.html and API
+open http://localhost:3000/HYPERSCALE_DASHBOARD.html
+```
+
+
 ## 1️⃣ Project Structure
 
 ```

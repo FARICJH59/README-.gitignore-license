@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-03-07T18:05:00Z",
+  "queue_depth": 142,
+  "throughput_per_min": 980,
+  "pending": 120,
+  "active": 18,
+  "completed_last_hour": 5200,
+  "failures_last_hour": 6,
+  "jobs": [
+    { "id": "task-101", "type": "brain-sync", "status": "active", "eta_sec": 12 },
+    { "id": "task-102", "type": "gpu-inference", "status": "pending", "eta_sec": 30 },
+    { "id": "task-103", "type": "telemetry-fanout", "status": "pending", "eta_sec": 18 }
+  ]
+}

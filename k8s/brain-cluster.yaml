@@ -1,0 +1,146 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: brain-cluster-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: brain-cluster-role
+  namespace: default
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: brain-cluster-rb
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: brain-cluster-sa
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: brain-cluster-role
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: brain-cluster
+  labels:
+    app: brain-node
+spec:
+  replicas: 200
+  selector:
+    matchLabels:
+      app: brain-node
+  template:
+    metadata:
+      labels:
+        app: brain-node
+    spec:
+      serviceAccountName: brain-cluster-sa
+      containers:
+        - name: brain-node
+          image: axiomcore/enterprise:latest
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          env:
+            - name: CLUSTER_ROLE
+              value: "brain"
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: brain-cluster-svc
+  labels:
+    app: brain-node
+spec:
+  selector:
+    app: brain-node
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: brain-cluster-netpol
+spec:
+  podSelector:
+    matchLabels:
+      app: brain-node
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: worker-node
+        - podSelector:
+            matchLabels:
+              app: telemetry-agent
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: task-queue
+      ports:
+        - protocol: TCP
+          port: 4222
+    - to:
+        - podSelector:
+            matchLabels:
+              app: telemetry-agent
+      ports:
+        - protocol: TCP
+          port: 4317
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: brain-cluster-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: brain-cluster
+  minReplicas: 50
+  maxReplicas: 250
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Object
+      object:
+        describedObject:
+          apiVersion: v1
+          kind: Service
+          name: task-queue
+        metric:
+          name: queue_length
+        target:
+          type: Value
+          value: 100

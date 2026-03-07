@@ -1,6 +1,10 @@
 import ChatUI from "../components/ChatUI";
 
-export default function LandingPage({ schema }) {
+type Props = {
+  schema: Record<string, any> | null;
+};
+
+export default function LandingPage({ schema }: Props) {
   const agentCount = schema?.agents?.length ?? 2;
   const endpointCount =
     (schema?.endpoints?.ml?.length ?? 0) + (schema?.endpoints?.cv?.length ?? 0) + (schema?.endpoints?.iot?.length ?? 0);
@@ -39,7 +43,7 @@ export default function LandingPage({ schema }) {
   );
 }
 
-function Card({ title, metric, description }) {
+function Card({ title, metric, description }: { title: string; metric: string; description: string }) {
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">{title}</p>

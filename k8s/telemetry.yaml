@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: telemetry-sa
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: telemetry-agent
+  labels:
+    app: telemetry-agent
+spec:
+  selector:
+    matchLabels:
+      app: telemetry-agent
+  template:
+    metadata:
+      labels:
+        app: telemetry-agent
+    spec:
+      serviceAccountName: telemetry-sa
+      containers:
+        - name: otel-agent
+          image: otel/opentelemetry-collector-contrib:0.102.1
+          args: ["--config=/etc/otel/config.yaml"]
+          volumeMounts:
+            - name: otel-config
+              mountPath: /etc/otel
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: otel-config
+          configMap:
+            name: telemetry-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telemetry-config
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    exporters:
+      logging:
+        logLevel: info
+    service:
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          exporters: [logging]
+        traces:
+          receivers: [otlp]
+          exporters: [logging]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemetry
+  labels:
+    app: telemetry-agent
+spec:
+  selector:
+    app: telemetry-agent
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
