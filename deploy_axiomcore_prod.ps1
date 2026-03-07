@@ -25,8 +25,10 @@ $Namespace = "axiomcore-prod"
 $GpuProduct = "GB300-NVL72"
 $DocsPath = "docs"
 $QueueMetricName = "queue_length"
+$QueueLengthTarget = 100 # target average queue length per worker for autoscaling
 $WorkerPoolMinReplicas = 100
 $WorkerPoolMaxReplicas = 800
+$MaxReplicasMultiplier = 3 # GPU clusters can scale up to 3x their base replicas
 
 function Write-Stage {
     param([string]$Message)
@@ -288,6 +290,7 @@ spec:
           protocol: UDP
         - port: 53
           protocol: TCP
+          # TCP 53 retained for DNS large responses; UDP is primary.
 "@
 
     Apply-K8sYaml -Yaml $securityYaml -Description "Namespace security (RBAC + NetworkPolicy)" -Namespaced
@@ -465,7 +468,7 @@ function Configure-Autoscalers {
 
     foreach ($cluster in @("llm", "vision", "ml", "embedding")) {
         $replicas = Get-ClusterReplicas -Cluster $cluster
-        $maxReplicas = [int]([math]::Ceiling($replicas * 3))
+        $maxReplicas = [int]([math]::Ceiling($replicas * $MaxReplicasMultiplier))
         $hpaArgs = @("autoscale", "deployment", "${cluster}-cluster", "--cpu-percent=50", "--min=$replicas", "--max=$maxReplicas", "-n", $Namespace) + (Get-KubectlArgs)
         if ($DryRun) { $hpaArgs += "--dry-run=client" }
         kubectl @hpaArgs
@@ -498,7 +501,7 @@ spec:
           name: $QueueMetricName
         target:
           type: AverageValue
-          averageValue: 100
+          averageValue: $QueueLengthTarget
 "@
     Apply-K8sYaml -Yaml $workerHpa -Description "Worker pool HPA (CPU + queue length)" -Namespaced
 }
