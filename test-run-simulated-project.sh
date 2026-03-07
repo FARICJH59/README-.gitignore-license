@@ -3,7 +3,40 @@
 # Test Run Simulated Project Script
 # This script runs a complete test of the AxiomCore simulated project
 
-set -e
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT_DIR"
+
+AUTO_EXIT=false
+
+usage() {
+    cat <<'EOF'
+Usage: test-run-simulated-project.sh [--ci]
+
+Options:
+  --ci        Run in non-interactive mode, shutting down servers after checks.
+  -h, --help  Show this help message.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --ci|--non-interactive|--auto-exit)
+            AUTO_EXIT=true
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
 
 echo "========================================="
 echo "AxiomCore Simulated Project Test Run"
@@ -16,7 +49,23 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Check prerequisites
+BACKEND_PID=""
+FRONTEND_PID=""
+
+cleanup() {
+    local exit_code=$?
+    if [[ -n "${BACKEND_PID}" ]] && kill -0 "${BACKEND_PID}" 2>/dev/null; then
+        kill "${BACKEND_PID}" 2>/dev/null || true
+        wait "${BACKEND_PID}" 2>/dev/null || true
+    fi
+    if [[ -n "${FRONTEND_PID}" ]] && kill -0 "${FRONTEND_PID}" 2>/dev/null; then
+        kill "${FRONTEND_PID}" 2>/dev/null || true
+        wait "${FRONTEND_PID}" 2>/dev/null || true
+    fi
+    return $exit_code
+}
+trap cleanup EXIT
+
 echo "Checking prerequisites..."
 
 # Check Python
@@ -58,7 +107,7 @@ echo ""
 cd frontend
 npm install --silent
 echo -e "${GREEN}✓ Frontend dependencies installed${NC}"
-cd ..
+cd "$ROOT_DIR"
 
 echo ""
 echo "========================================="
@@ -78,7 +127,6 @@ if curl -s http://127.0.0.1:8000/health > /dev/null; then
     echo -e "${GREEN}✓ Backend server is running and healthy${NC}"
 else
     echo -e "${RED}✗ Backend server failed to start${NC}"
-    kill $BACKEND_PID 2>/dev/null || true
     exit 1
 fi
 
@@ -89,10 +137,10 @@ echo "========================================="
 echo ""
 
 cd frontend
-npm run dev &
+npm run dev >/dev/null 2>&1 &
 FRONTEND_PID=$!
 echo -e "${YELLOW}Frontend server starting (PID: $FRONTEND_PID)${NC}"
-cd ..
+cd "$ROOT_DIR"
 
 # Wait for frontend to start
 sleep 5
@@ -102,7 +150,6 @@ if curl -s http://localhost:5173 > /dev/null; then
     echo -e "${GREEN}✓ Frontend server is running${NC}"
 else
     echo -e "${RED}✗ Frontend server failed to start${NC}"
-    kill $BACKEND_PID $FRONTEND_PID 2>/dev/null || true
     exit 1
 fi
 
@@ -112,22 +159,26 @@ echo "Step 5: Testing API Integration"
 echo "========================================="
 echo ""
 
+TEST_FAILURES=0
+
 # Test backend endpoint directly
-BACKEND_RESPONSE=$(curl -s http://127.0.0.1:8000/api/hello)
+BACKEND_RESPONSE=$(curl -s http://127.0.0.1:8000/api/hello || true)
 if echo "$BACKEND_RESPONSE" | grep -q "Hello from FastAPI backend"; then
     echo -e "${GREEN}✓ Backend API endpoint working${NC}"
     echo "  Response: $BACKEND_RESPONSE"
 else
     echo -e "${RED}✗ Backend API endpoint not responding correctly${NC}"
+    TEST_FAILURES=$((TEST_FAILURES + 1))
 fi
 
 # Test frontend proxy to backend
-PROXY_RESPONSE=$(curl -s http://localhost:5173/api/hello)
+PROXY_RESPONSE=$(curl -s http://localhost:5173/api/hello || true)
 if echo "$PROXY_RESPONSE" | grep -q "Hello from FastAPI backend"; then
     echo -e "${GREEN}✓ Frontend proxy to backend working${NC}"
     echo "  Response: $PROXY_RESPONSE"
 else
     echo -e "${RED}✗ Frontend proxy not working correctly${NC}"
+    TEST_FAILURES=$((TEST_FAILURES + 1))
 fi
 
 echo ""
@@ -135,8 +186,19 @@ echo "========================================="
 echo "Test Run Complete!"
 echo "========================================="
 echo ""
-echo -e "${GREEN}✓ All tests passed successfully!${NC}"
+
+if [[ $TEST_FAILURES -eq 0 ]]; then
+    echo -e "${GREEN}✓ All tests passed successfully!${NC}"
+else
+    echo -e "${RED}✗ Test run completed with ${TEST_FAILURES} failure(s)${NC}"
+fi
 echo ""
+
+if $AUTO_EXIT || [[ $TEST_FAILURES -ne 0 ]]; then
+    echo "Shutting down servers..."
+    exit $TEST_FAILURES
+fi
+
 echo "Servers are running:"
 echo "  - Backend:  http://127.0.0.1:8000"
 echo "  - Frontend: http://localhost:5173"
@@ -145,7 +207,7 @@ echo "Press Ctrl+C to stop both servers..."
 echo ""
 
 # Wait for user to stop
-trap "echo ''; echo 'Stopping servers...'; kill $BACKEND_PID $FRONTEND_PID 2>/dev/null || true; echo 'Servers stopped.'; exit 0" INT TERM
+trap "echo ''; echo 'Stopping servers...'; exit 0" INT TERM
 
 # Keep script running
 wait

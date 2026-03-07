@@ -169,6 +169,9 @@ npm run build
 # Run all agent tests
 npm test
 
+# Run the simulated project end-to-end test
+npm run test:simulated-project
+
 # Non-destructive frontend build to validate packaging
 npm run dry-run
 ```
