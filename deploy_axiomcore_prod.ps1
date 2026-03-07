@@ -358,7 +358,7 @@ function Ensure-CiCdWorkflow {
         New-Item -ItemType Directory -Path $workflowDir -Force | Out-Null
     }
 
-    $workflowContent = @"
+    $workflowContent = @'
 name: AxiomCore Full CI/CD
 
 on:
@@ -368,8 +368,9 @@ on:
       - main
 
 env:
-  DOCKER_IMAGE: $DockerImage
-  NAMESPACE: $Namespace
+  DOCKER_IMAGE: axiomcore/enterprise:latest
+  NAMESPACE: axiomcore-prod
+  KUBE_CONTEXT: ${{ secrets.KUBE_CONTEXT }}
 
 jobs:
   deploy:
@@ -379,17 +380,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build & Push Docker
+      # Expects DOCKER_USERNAME and DOCKER_TOKEN (Docker access token) secrets
+      - name: Login to Docker registry
+        id: docker_login
         if: hashFiles('Dockerfile') != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build & Push Docker
+        if: steps.docker_login.outcome == 'success'
         run: |
           docker build -t $DOCKER_IMAGE .
           docker push $DOCKER_IMAGE
 
-      - name: Deploy to K8s (if manifests exist)
-        if: hashFiles('infra/k8s/**') != ''
+      - name: Configure kubectl
+        if: hashFiles('infra/k8s/**/*.y*ml') != ''
+        env:
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
+          KUBE_CONTEXT: ${{ secrets.KUBE_CONTEXT }}
         run: |
-          kubectl apply -f infra/k8s/ -n $NAMESPACE
-"@
+          if [ -z "$KUBE_CONFIG_B64" ]; then
+            echo "KUBE_CONFIG_B64 secret is required to configure kubectl." >&2
+            exit 1
+          fi
+          mkdir -p "$HOME/.kube"
+          echo "$KUBE_CONFIG_B64" | base64 -d > "$HOME/.kube/config"
+          if [ -n "$KUBE_CONTEXT" ]; then
+            kubectl config use-context "$KUBE_CONTEXT"
+          fi
+
+      - name: Deploy to K8s (if manifests exist)
+        if: hashFiles('infra/k8s/**/*.y*ml') != ''
+        run: |
+          kubectl apply --validate=true -f infra/k8s/ -n $NAMESPACE
+'@
 
     $workflowContent | Out-File -FilePath $workflowPath -Encoding utf8
     Write-Host "CI/CD workflow scaffold written to $workflowPath." -ForegroundColor Green
