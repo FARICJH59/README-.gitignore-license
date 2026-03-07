@@ -15,7 +15,8 @@ usage() {
 Usage: test-run-simulated-project.sh [--ci]
 
 Options:
-  --ci        Run in non-interactive mode, shutting down servers after checks.
+  --ci, --non-interactive, --auto-exit
+              Run in non-interactive mode, shutting down servers after checks.
   -h, --help  Show this help message.
 EOF
 }
@@ -48,23 +49,25 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
+FRONTEND_LOG="${ROOT_DIR}/frontend-dev.log"
 
-BACKEND_PID=""
-FRONTEND_PID=""
+# Truncate/create log file for the frontend dev server
+: > "$FRONTEND_LOG"
+
+BACKEND_PID=0
+FRONTEND_PID=0
 
 cleanup() {
-    local exit_code=$?
-    if [[ -n "${BACKEND_PID}" ]] && kill -0 "${BACKEND_PID}" 2>/dev/null; then
+    if [[ $BACKEND_PID -gt 0 ]] && kill -0 "${BACKEND_PID}" 2>/dev/null; then
         kill "${BACKEND_PID}" 2>/dev/null || true
         wait "${BACKEND_PID}" 2>/dev/null || true
     fi
-    if [[ -n "${FRONTEND_PID}" ]] && kill -0 "${FRONTEND_PID}" 2>/dev/null; then
+    if [[ $FRONTEND_PID -gt 0 ]] && kill -0 "${FRONTEND_PID}" 2>/dev/null; then
         kill "${FRONTEND_PID}" 2>/dev/null || true
         wait "${FRONTEND_PID}" 2>/dev/null || true
     fi
-    return $exit_code
 }
-trap cleanup EXIT
+trap 'rc=$?; cleanup; exit "$rc"' EXIT
 
 echo "Checking prerequisites..."
 
@@ -137,9 +140,9 @@ echo "========================================="
 echo ""
 
 cd frontend
-npm run dev >/dev/null 2>&1 &
+npm run dev >"$FRONTEND_LOG" 2>&1 &
 FRONTEND_PID=$!
-echo -e "${YELLOW}Frontend server starting (PID: $FRONTEND_PID)${NC}"
+echo -e "${YELLOW}Frontend server starting (PID: $FRONTEND_PID) — logs: $FRONTEND_LOG${NC}"
 cd "$ROOT_DIR"
 
 # Wait for frontend to start
@@ -150,6 +153,8 @@ if curl -s http://localhost:5173 > /dev/null; then
     echo -e "${GREEN}✓ Frontend server is running${NC}"
 else
     echo -e "${RED}✗ Frontend server failed to start${NC}"
+    echo "Recent frontend logs:"
+    tail -n 50 "$FRONTEND_LOG" || true
     exit 1
 fi
 
@@ -162,8 +167,12 @@ echo ""
 TEST_FAILURES=0
 
 # Test backend endpoint directly
-BACKEND_RESPONSE=$(curl -s http://127.0.0.1:8000/api/hello || true)
-if echo "$BACKEND_RESPONSE" | grep -q "Hello from FastAPI backend"; then
+BACKEND_RESPONSE=$(curl -s http://127.0.0.1:8000/api/hello)
+BACKEND_STATUS=$?
+if [[ $BACKEND_STATUS -ne 0 ]]; then
+    echo -e "${RED}✗ Backend API endpoint unreachable (curl exit $BACKEND_STATUS)${NC}"
+    TEST_FAILURES=$((TEST_FAILURES + 1))
+elif echo "$BACKEND_RESPONSE" | grep -q "Hello from FastAPI backend"; then
     echo -e "${GREEN}✓ Backend API endpoint working${NC}"
     echo "  Response: $BACKEND_RESPONSE"
 else
@@ -171,14 +180,22 @@ else
     TEST_FAILURES=$((TEST_FAILURES + 1))
 fi
 
-# Test frontend proxy to backend
-PROXY_RESPONSE=$(curl -s http://localhost:5173/api/hello || true)
-if echo "$PROXY_RESPONSE" | grep -q "Hello from FastAPI backend"; then
-    echo -e "${GREEN}✓ Frontend proxy to backend working${NC}"
-    echo "  Response: $PROXY_RESPONSE"
+if [[ $TEST_FAILURES -ne 0 ]]; then
+    echo -e "${YELLOW}⚠ Skipping frontend proxy test because backend check failed${NC}"
 else
-    echo -e "${RED}✗ Frontend proxy not working correctly${NC}"
-    TEST_FAILURES=$((TEST_FAILURES + 1))
+    # Test frontend proxy to backend
+    PROXY_RESPONSE=$(curl -s http://localhost:5173/api/hello)
+    PROXY_STATUS=$?
+    if [[ $PROXY_STATUS -ne 0 ]]; then
+        echo -e "${RED}✗ Frontend proxy unreachable (curl exit $PROXY_STATUS)${NC}"
+        TEST_FAILURES=$((TEST_FAILURES + 1))
+    elif echo "$PROXY_RESPONSE" | grep -q "Hello from FastAPI backend"; then
+        echo -e "${GREEN}✓ Frontend proxy to backend working${NC}"
+        echo "  Response: $PROXY_RESPONSE"
+    else
+        echo -e "${RED}✗ Frontend proxy not working correctly${NC}"
+        TEST_FAILURES=$((TEST_FAILURES + 1))
+    fi
 fi
 
 echo ""
@@ -194,9 +211,14 @@ else
 fi
 echo ""
 
-if $AUTO_EXIT || [[ $TEST_FAILURES -ne 0 ]]; then
+if [[ $TEST_FAILURES -ne 0 ]]; then
     echo "Shutting down servers..."
-    exit $TEST_FAILURES
+    exit 1
+fi
+
+if $AUTO_EXIT; then
+    echo "Shutting down servers..."
+    exit 0
 fi
 
 echo "Servers are running:"
@@ -206,8 +228,5 @@ echo ""
 echo "Press Ctrl+C to stop both servers..."
 echo ""
 
-# Wait for user to stop
-trap "echo ''; echo 'Stopping servers...'; exit 0" INT TERM
-
-# Keep script running
+# Wait for user to stop; cleanup trap will handle shutdown
 wait
