@@ -1,0 +1,30 @@
+name: AxiomCore Full CI/CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_IMAGE: axiomcore/enterprise:latest
+  NAMESPACE: axiomcore-prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build & Push Docker
+        if: hashFiles('Dockerfile') != ''
+        run: |
+          docker build -t $DOCKER_IMAGE .
+          docker push $DOCKER_IMAGE
+
+      - name: Deploy to K8s (if manifests exist)
+        if: hashFiles('infra/k8s/**') != ''
+        run: |
+          kubectl apply -f infra/k8s/ -n $NAMESPACE
