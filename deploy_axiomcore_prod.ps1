@@ -253,7 +253,7 @@ metadata:
 rules:
   - apiGroups: ["", "apps", "batch", "autoscaling"]
     resources: ["deployments", "statefulsets", "daemonsets", "services", "configmaps", "secrets", "pods", "pods/log", "horizontalpodautoscalers", "jobs", "cronjobs"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -286,6 +286,7 @@ spec:
     - to:
         - podSelector: {}
       # Allow both UDP and TCP DNS egress (UDP primary; TCP for large responses/zone transfers).
+      # Expand egress rules per-environment for model downloads/API calls; default is locked-down/air-gapped posture.
       ports:
         - port: 53
           protocol: UDP
@@ -433,6 +434,14 @@ function Get-ClusterReplicas {
     }
 }
 
+function Get-ClusterMaxMultiplier {
+    param([string]$Cluster)
+    switch ($Cluster) {
+        "llm" { return 4 }        # LLM workloads scale wider
+        default { return $MaxReplicasMultiplier }
+    }
+}
+
 function Apply-InfraComponent {
     param(
         [string]$Path,
@@ -469,14 +478,14 @@ function Configure-Autoscalers {
     # HPA min replicas align with base deployments to avoid scaling below planned capacity.
     foreach ($cluster in @("llm", "vision", "ml", "embedding")) {
         $replicas = Get-ClusterReplicas -Cluster $cluster
-        $maxReplicas = $replicas * $MaxReplicasMultiplier
+        $maxReplicas = $replicas * (Get-ClusterMaxMultiplier -Cluster $cluster)
         $hpaArgs = @("autoscale", "deployment", "${cluster}-cluster", "--cpu-percent=50", "--min=$replicas", "--max=$maxReplicas", "-n", $Namespace) + (Get-KubectlArgs)
         if ($DryRun) { $hpaArgs += "--dry-run=client" }
         kubectl @hpaArgs
     }
 
     # Worker pool HPA with CPU + queue length external metric
-    # Requires metrics adapter (e.g., KEDA/Prometheus Adapter) exposing queue_length metric.
+    # Requires metrics adapter (e.g., KEDA/Prometheus Adapter) exposing queue_length metric from the task queue (e.g., Redis/RabbitMQ queue depth).
     $workerHpa = @"
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
