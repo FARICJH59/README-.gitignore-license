@@ -1,0 +1,30 @@
+{
+  "name": "axiomcore-cloudflare",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AxiomCore + Cloudflare AI Playground Copilot Scaffold",
+  "scripts": {
+    "dev:worker": "wrangler dev backend/workers/mainWorker.ts --local",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm --prefix frontend install --no-audit --prefer-offline && npm --prefix frontend run build",
+    "test": "npm run test:fraud-agent && npm run test:data-parser && npm run test:executor",
+    "dry-run": "npm --prefix frontend install --no-audit --prefer-offline && npm --prefix frontend run build -- --mode=development --outDir dist-dry-run",
+    "validate:new-agent": "ts-node scripts/validateNewAgent.ts",
+    "test:fraud-agent": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testFraudDetectionAgent.ts",
+    "test:data-parser": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testDataParserAgent.ts",
+    "test:executor": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/testAgentExecutor.ts",
+    "test:simulated-project": "bash test-run-simulated-project.sh --ci"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260305.1",
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS",
+      "moduleResolution": "Node"
+    }
+  }
+}

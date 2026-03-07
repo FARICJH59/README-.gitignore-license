@@ -1,0 +1,34 @@
+You are a senior AI platform architect and TypeScript developer. Build a new AxiomCore agent using the layer model: bootstrap, executor, mesh, evolution, marketplace, revenue, governance.
+
+Target agent (placeholders resolved):
+- agentName: FraudDetectionAgent
+- layerName: executor
+- capabilitiesArray: ["analyzeTransactions","flagSuspicious"]
+- permissionsArray: ["read","write","alert"]
+
+Requirements:
+1) Generate a full TypeScript agent class in runtime/executor/fraudDetectionAgent.ts that:
+   - Uses type-safe permissions and capabilities.
+   - Integrates the AuditLogger for every callable action.
+   - Emits debug logging and maintains simple metrics (analyzed, flagged, alerts, lastUpdated).
+   - Remains Cloudflare Workers compatible.
+2) Automatically register the agent:
+   - Use AgentBootstrap for bootstrap/executor/mesh/evolution (executor registration hooks into AgentBootstrap via registerExecutorAgent).
+   - Use MarketplaceInstaller for marketplace agents.
+   - Use RevenueEngine for revenue agents.
+   - Apply governance validation (enforceLayerPlacement + validateLayerName) for every registration.
+3) Update newAgents.json with { "path": "runtime/executor/fraudDetectionAgent.ts", "layer": "executor" }.
+4) Provide a Layer Enforcement snippet (runtime/governance/layerValidator.ts) that throws when placement is incorrect.
+5) Provide a small local test snippet (scripts/testFraudDetectionAgent.ts) that constructs the agent, runs analyzeTransactions + flagSuspicious, and logs metrics.
+6) Provide registration snippet: runtime/executor/agentRegistry.ts registers descriptors through AgentBootstrap and enforces layer placement.
+7) Validation command: ts-node scripts/validateNewAgent.ts (ensures paths/layers are correct).
+8) Build & run: npm run build; wrangler dev (backend/workers/mainWorker.ts).
+
+Return the folder/file structure plus the code snippets for the agent, registration, enforcement, validation, and test.
+
+Sample newAgents.json
+[
+  { "path": "runtime/evolution/visionAgent.ts", "layer": "evolution" },
+  { "path": "runtime/revenue/pricingAgent.ts", "layer": "revenue" },
+  { "path": "runtime/executor/fraudDetectionAgent.ts", "layer": "executor" }
+]
