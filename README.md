@@ -155,6 +155,7 @@ This clones the scaffold, installs backend/frontend dependencies, and launches b
 ## Documentation
 - [Architecture Diagram](docs/ARCHITECTURE.md)
 - [Runtime Flow](docs/RUNTIME_FLOW.md)
+- [Hyperscale Deployment](docs/HYPERSCALE.md)
 
 ---
 

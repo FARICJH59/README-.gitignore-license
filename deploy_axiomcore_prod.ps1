@@ -6,11 +6,12 @@
     - Applies Kubernetes resources for brain + GPU clusters, task queue, telemetry, and InferenceX
     - Adds a GitHub Actions CI/CD workflow scaffold
 
-    Use -DryRun to render Kubernetes resources without applying them.
+Use -DryRun (alias: -PlanOnly) to render Kubernetes resources without applying them.
 #>
 
 [CmdletBinding()]
 param(
+    [Alias("PlanOnly")]
     [switch]$DryRun,
     [string]$KubeContext = "your-cluster-context"
 )
@@ -23,6 +24,7 @@ $DockerImage = "axiomcore/enterprise:latest"
 $Namespace = "axiomcore-prod"
 $GpuProduct = "GB300-NVL72"
 $DocsPath = "docs"
+$QueueMetricName = "queue_length"
 
 function Write-Stage {
     param([string]$Message)
@@ -120,11 +122,34 @@ flowchart TD
 ```
 "@
 
+    $hyperscaleContent = @"
+# Hyperscale Deployment Diagram
+```mermaid
+flowchart TD
+    Control[Meta-Orchestrator] --> Brain[Brain Cluster (200 nodes)]
+    Control --> Scheduler[Scheduler]
+    Scheduler --> Executor[Executor]
+    Executor --> Queue[Task Queue]
+    Queue --> Workers[Worker Pools (500 nodes)]
+    Workers --> LLMGPU[LLM GPU Cluster (100)]
+    Workers --> VisionGPU[Vision GPU Cluster (50)]
+    Workers --> MLGPU[ML GPU Cluster (50)]
+    Workers --> EmbGPU[Embedding GPU Cluster (50)]
+    Workers --> Memory[Cognitive Memory Layer]
+    Workers --> Telemetry[Telemetry/Observability]
+    subgraph Agents [1M Agents]
+        A1[Agents] --> Workers
+    end
+```
+"@
+
     $archPath = Join-Path $DocsPath "ARCHITECTURE.md"
     $runtimePath = Join-Path $DocsPath "RUNTIME_FLOW.md"
+    $hyperscalePath = Join-Path $DocsPath "HYPERSCALE.md"
 
     $archContent | Out-File -FilePath $archPath -Encoding utf8
     $runtimeContent | Out-File -FilePath $runtimePath -Encoding utf8
+    $hyperscaleContent | Out-File -FilePath $hyperscalePath -Encoding utf8
 
     Write-Host "Mermaid diagrams written to $DocsPath." -ForegroundColor Green
 }
@@ -146,6 +171,7 @@ function Update-ReadmeDocs {
 ## Documentation
 - [Architecture Diagram](docs/ARCHITECTURE.md)
 - [Runtime Flow](docs/RUNTIME_FLOW.md)
+- [Hyperscale Deployment](docs/HYPERSCALE.md)
 "@
 
     Add-Content -Path $readmePath -Value $docsBlock
@@ -201,12 +227,68 @@ function Ensure-K8sNamespace {
 
     if ($exists) {
         Write-Host "Namespace $Namespace already exists."
-        return
+    } else {
+        $createArgs = @("create", "namespace", $Namespace) + (Get-KubectlArgs)
+        if ($DryRun) { $createArgs += "--dry-run=client" }
+        kubectl @createArgs
     }
 
-    $createArgs = @("create", "namespace", $Namespace) + (Get-KubectlArgs)
-    if ($DryRun) { $createArgs += "--dry-run=client" }
-    kubectl @createArgs
+    # Apply namespace-level RBAC and NetworkPolicy (idempotent via apply)
+    $securityYaml = @"
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: axiomcore-deployer
+  namespace: $Namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: axiomcore-deployer-role
+  namespace: $Namespace
+rules:
+  - apiGroups: ["", "apps", "batch", "autoscaling"]
+    resources: ["deployments", "statefulsets", "daemonsets", "services", "configmaps", "secrets", "pods", "pods/log", "horizontalpodautoscalers", "jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: axiomcore-deployer-binding
+  namespace: $Namespace
+subjects:
+  - kind: ServiceAccount
+    name: axiomcore-deployer
+    namespace: $Namespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: axiomcore-deployer-role
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-external
+  namespace: $Namespace
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+"@
+
+    Apply-K8sYaml -Yaml $securityYaml -Description "Namespace security (RBAC + NetworkPolicy)" -Namespaced:$false
 }
 
 function Apply-K8sYaml {
@@ -268,6 +350,13 @@ spec:
 function Deploy-GpuClusters {
     Write-Stage "Deploying GPU clusters"
     foreach ($cluster in @("llm", "vision", "ml", "embedding")) {
+        $replicas = switch ($cluster) {
+            "llm" { 100 }
+            "vision" { 50 }
+            "ml" { 50 }
+            "embedding" { 50 }
+            default { 10 }
+        }
         $deploymentYaml = @"
 apiVersion: apps/v1
 kind: Deployment
@@ -275,7 +364,7 @@ metadata:
   name: ${cluster}-cluster
   namespace: $Namespace
 spec:
-  replicas: 100
+  replicas: $replicas
   selector:
     matchLabels:
       app: ${cluster}-gpu
@@ -298,6 +387,40 @@ spec:
 
         Apply-K8sYaml -Yaml $deploymentYaml -Description "${cluster} GPU cluster" -Namespaced
     }
+}
+
+function Deploy-WorkerPool {
+    Write-Stage "Deploying worker pool (fallback)"
+    $workerYaml = @"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-pool
+  namespace: $Namespace
+spec:
+  replicas: 500
+  selector:
+    matchLabels:
+      app: worker-pool
+  template:
+    metadata:
+      labels:
+        app: worker-pool
+    spec:
+      serviceAccountName: axiomcore-deployer
+      containers:
+      - name: worker
+        image: $DockerImage
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+"@
+
+    Apply-K8sYaml -Yaml $workerYaml -Description "Worker pool deployment" -Namespaced
 }
 
 function Apply-InfraComponent {
@@ -334,10 +457,41 @@ function Configure-Autoscalers {
     kubectl @brainArgs
 
     foreach ($cluster in @("llm", "vision", "ml", "embedding")) {
-        $hpaArgs = @("autoscale", "deployment", "${cluster}-cluster", "--cpu-percent=50", "--min=50", "--max=200", "-n", $Namespace) + (Get-KubectlArgs)
+        $hpaArgs = @("autoscale", "deployment", "${cluster}-cluster", "--cpu-percent=50", "--min=10", "--max=200", "-n", $Namespace) + (Get-KubectlArgs)
         if ($DryRun) { $hpaArgs += "--dry-run=client" }
         kubectl @hpaArgs
     }
+
+    # Worker pool HPA with CPU + queue length external metric
+    $workerHpa = @"
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: worker-pool-hpa
+  namespace: $Namespace
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: worker-pool
+  minReplicas: 100
+  maxReplicas: 800
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: External
+      external:
+        metric:
+          name: "$QueueMetricName"
+        target:
+          type: AverageValue
+          averageValue: 100
+"@
+    Apply-K8sYaml -Yaml $workerHpa -Description "Worker pool HPA (CPU + queue length)" -Namespaced
 }
 
 function Verify-Deployment {
@@ -434,6 +588,12 @@ Apply-InfraComponent -Path "infra/k8s/redis-deployment.yaml" -Description "Redis
 Apply-InfraComponent -Path "infra/k8s/worker-pool-deployment.yaml" -Description "Worker pool"
 Apply-InfraComponent -Path "infra/k8s/telemetry-deployment.yaml" -Description "Telemetry"
 Apply-InfraComponent -Path "infra/k8s/inferencex-deployment.yaml" -Description "InferenceX"
+
+if (-not (Test-Path -Path "infra/k8s/worker-pool-deployment.yaml")) {
+    Deploy-WorkerPool
+} else {
+    Write-Host "Worker pool manifest detected; skipping fallback deployment." -ForegroundColor Yellow
+}
 
 Configure-Autoscalers
 Ensure-CiCdWorkflow
