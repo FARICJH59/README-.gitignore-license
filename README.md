@@ -152,6 +152,11 @@ This clones the scaffold, installs backend/frontend dependencies, and launches b
 ✅ React front-end using useAgent hooks  
 ✅ Human-in-the-loop approvals and event-driven tasks  
 
+## Documentation
+- [Architecture Diagram](docs/ARCHITECTURE.md)
+- [Runtime Flow](docs/RUNTIME_FLOW.md)
+- [Hyperscale Deployment](docs/HYPERSCALE.md)
+
 ---
 
 ### Local frontend
