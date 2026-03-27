@@ -281,6 +281,15 @@ def get_user_data(user_id: str) -> dict:
 - Keep explanations clear and concise
 - Update relevant docs with code changes
 
+## AI/ML Development Guidelines
+
+- Track datasets and models with versioned artifacts; never commit raw sensitive data.
+- Document experiment metadata (hyperparameters, seeds, dataset versions) to enable reproducibility.
+- Provide evaluation metrics and bias checks for each model change; include a short model card in `/docs`.
+- Prefer deterministic seeds in training scripts and include input validation to prevent unsafe payloads.
+- Run security scans on AI dependencies and avoid executing untrusted model code or custom ops.
+- Ensure inference endpoints enforce authentication and rate limits consistent with backend standards.
+
 ## Testing
 
 ### Test Requirements
