@@ -20,21 +20,21 @@ jobs:
       - name: Brain Sync
         shell: pwsh
         run: |
-          $RootPath = "${{ github.workspace }}"
-          & "$RootPath\scripts\axiom-sync.ps1" -RepoPath "${{ github.workspace }}/${{ matrix.repo }}"
+          $RepoPath = "${{ github.workspace }}\${{ matrix.repo }}"
+          & "$RepoPath\scripts\axiom-sync.ps1" -RepoPath $RepoPath
       
       - name: Compliance Check
         shell: pwsh
         run: |
-          $RootPath = "${{ github.workspace }}"
-          & "$RootPath\scripts\axiom-compliance.ps1" -RepoPath "${{ github.workspace }}/${{ matrix.repo }}"
+          $RepoPath = "${{ github.workspace }}\${{ matrix.repo }}"
+          & "$RepoPath\scripts\axiom-compliance.ps1" -RepoPath $RepoPath
       
       - name: Run Orchestrator
         if: success()
         shell: pwsh
         run: |
-          $RootPath = "${{ github.workspace }}"
-          & "$RootPath\scripts\axiom-orchestrator.ps1" -Action status
+          $RepoPath = "${{ github.workspace }}\${{ matrix.repo }}"
+          & "$RepoPath\scripts\axiom-orchestrator.ps1" -Action status
       
       - name: Upload Compliance Logs
         uses: actions/upload-artifact@v4
