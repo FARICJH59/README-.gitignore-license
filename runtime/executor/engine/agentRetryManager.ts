@@ -17,7 +17,7 @@ export class AgentRetryManager {
     options?: { auditLogger?: AuditLogger; metricsRecorder?: MetricsRecorder; baseDelayMs?: number; debug?: boolean },
   ) {
     this.audit = options?.auditLogger ?? new AuditLogger();
-    this.metrics = options?.metricsRecorder ?? new MetricsRecorder();
+    this.metrics = options?.metricsRecorder ?? executor.getMetricsRecorder();
     this.debug = options?.debug ?? isDebugEnabled();
     this.baseDelayMs = options?.baseDelayMs ?? 100;
   }
